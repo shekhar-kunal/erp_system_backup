@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ERP Dashboard</title>
+    <style>
+        body { font-family: Arial; padding: 40px; }
+        .card {
+            display: inline-block;
+            width: 220px;
+            padding: 20px;
+            margin: 15px;
+            border-radius: 10px;
+            background: #f4f4f4;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>📊 ERP Dashboard</h1>
+
+<div class="card">
+    <h3>Total Products</h3>
+    <div class="number">{{ total_products }}</div>
+</div>
+
+<div class="card">
+    <h3>Low Stock Items</h3>
+    <div class="number">{{ low_stock }}</div>
+</div>
+
+<div class="card">
+    <h3>Total Sales</h3>
+    <div class="number">${{ total_sales }}</div>
+</div>
+
+<div class="card">
+    <h3>Total Purchases</h3>
+    <div class="number">${{ total_purchases }}</div>
+</div>
+
+</body>
+</html>
