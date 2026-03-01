@@ -404,12 +404,16 @@ class PurchaseOrder(models.Model):
         """Calculate order totals"""
         # Only calculate if we have a primary key
         if self.pk:
-            lines_total = self.lines.aggregate(
-                total=Sum(F('quantity') * F('price'))
-            )['total'] or 0
+            aggregates = self.lines.aggregate(
+                subtotal=Sum(F('quantity') * F('net_price')),
+                tax_amount=Sum('tax_amount'),
+                discount_amount=Sum(F('quantity') * F('discount_amount'))
+            )
             
-            self.subtotal = lines_total
-            self.total_amount = self.subtotal + self.tax_amount + self.shipping_cost - self.discount_amount
+            self.subtotal = aggregates['subtotal'] or 0
+            self.tax_amount = aggregates['tax_amount'] or 0
+            self.discount_amount = aggregates['discount_amount'] or 0
+            self.total_amount = self.subtotal + self.tax_amount + self.shipping_cost
         return self.total_amount
 
     @property
@@ -491,7 +495,7 @@ class PurchaseOrder(models.Model):
 
   
     @transaction.atomic
-    def receive_line(self, line_id, quantity_to_receive, batch_info=None, quality_status='accepted'): 
+    def receive_line(self, line_id, quantity_to_receive, batch_info=None, quality_status='accepted', user=None):
         """
         Receive a partial quantity for a specific line.
         Updates stock and the line's received_quantity.
@@ -557,7 +561,9 @@ class PurchaseOrder(models.Model):
                     expiry_date=batch_info.get('expiry_date'),
                     manufacturing_date=batch_info.get('manufacturing_date'),
                     supplier=self.vendor.name,
-                    quality_status=quality_status
+                    quality_status=quality_status,
+                    reference=self.po_number,
+                    source='purchase'
                 )
             except Exception as e:
                 # If add_batch fails, try direct creation
@@ -591,7 +597,7 @@ class PurchaseOrder(models.Model):
                 source="Purchase Receipt",
                 unit_qty=unit_qty,
                 notes=f"Received from PO {self.po_number}",
-                user=None  # You might want to pass the user here
+                user=user
             )
 
         # Update received quantity
@@ -599,15 +605,15 @@ class PurchaseOrder(models.Model):
         line.save()
 
         # Update order status based on receipt progress
-        if all(line.received_quantity == line.quantity for line in self.lines.all()):
+        if all(l.received_quantity == l.quantity for l in self.lines.all()):
             self.status = 'done'
-        elif any(line.received_quantity > 0 for line in self.lines.all()):
+        elif any(l.received_quantity > 0 for l in self.lines.all()):
             self.status = 'partial'
         # else remains 'confirmed'
         
         self.save()
         
-        return line
+        return line, batch
 
     def update_status_from_receipts(self):
         """
@@ -642,11 +648,12 @@ class PurchaseOrder(models.Model):
                         warehouse=warehouse,
                         section=line.section
                     )
-                    stock.reduce_stock(
+                    stock.remove_stock(
                         qty=line.received_quantity,
                         reference=f"Cancel {self.po_number}",
-                        source="Purchase Cancel",
-                        section=line.section
+                        source="return",
+                        notes=f"Cancellation of PO {self.po_number}",
+                        user=user
                     )
                 except Stock.DoesNotExist:
                     pass
@@ -742,7 +749,7 @@ class PurchaseOrderLine(models.Model):
         # Update order totals
         if self.order_id:
             self.order.calculate_totals()
-            self.order.save(update_fields=['subtotal', 'total_amount'])
+            self.order.save(update_fields=['subtotal', 'tax_amount', 'discount_amount', 'total_amount'])
 
     def calculate_totals(self):
         """Calculate line totals"""
@@ -937,8 +944,9 @@ class PurchaseReceiptLine(models.Model):
         return f"{self.product.name} - {self.quantity_received}"
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # New receipt line
-            self.quantity_accepted = self.quantity_received - self.quantity_rejected
+        # Always recalculate accepted quantity if not provided or if being updated
+        if self.quantity_accepted is None or 'quantity_rejected' in kwargs.get('update_fields', []) or not self.pk:
+            self.quantity_accepted = (self.quantity_received or 0) - (self.quantity_rejected or 0)
         super().save(*args, **kwargs)
 
 

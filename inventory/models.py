@@ -504,7 +504,8 @@ class Stock(models.Model):
     @property
     def total_value(self):
         """Calculate total value of this stock"""
-        return self.quantity * (self.product.cost_price or 0)
+        # product.cost is the correct field name
+        return self.quantity * (getattr(self.product, 'cost', 0) or 0)
 
     @property
     def available_quantity(self):
@@ -576,7 +577,7 @@ class Stock(models.Model):
             )
         
         old_qty = self.quantity
-        self.quantity -= required_base
+        self.quantity = (self.quantity - required_base).quantize(Decimal('0.01'))
         self.last_movement = timezone.now()
         self.save()
         
@@ -676,26 +677,53 @@ class Stock(models.Model):
     def add_batch(self, batch_number, quantity, expiry_date=None, 
                   manufacturing_date=None, supplier="", **kwargs):
         """Add a new batch to this stock"""
-        from .models import StockBatch, InventorySettings
+        from django.apps import apps
+        StockBatch = apps.get_model('inventory', 'StockBatch')
+        InventorySettings = apps.get_model('inventory', 'InventorySettings')
         
         settings = InventorySettings.get_settings()
         if not settings.enable_batch_tracking:
             raise ValidationError("Batch tracking is not enabled")
         
+        # Ensure we have Decimals for calculations
+        dec_qty = Decimal(str(quantity))
+        dec_unit_qty = Decimal(str(self.unit_quantity))
+
+        # Extract fields handled specifically from kwargs
+        reference = kwargs.pop('reference', '')
+        source = kwargs.pop('source', 'purchase')
+
         batch = StockBatch.objects.create(
             stock=self,
             batch_number=batch_number,
-            quantity=quantity,
+            quantity=dec_qty,
             unit=self.unit,
-            unit_quantity=self.unit_quantity,
+            unit_quantity=dec_unit_qty,
             expiry_date=expiry_date,
             manufacturing_date=manufacturing_date,
             supplier=supplier,
-            **kwargs
+            **kwargs # Pass remaining metadata like quality_status
         )
         
-        self.quantity += (quantity * self.unit_quantity)
+        old_qty = self.quantity
+        base_increase = (dec_qty * dec_unit_qty).quantize(Decimal('0.01'))
+        self.quantity = (self.quantity + base_increase).quantize(Decimal('0.01'))
+        self.last_movement = timezone.now()
         self.save()
+
+        StockMovement.objects.create(
+            product=self.product,
+            warehouse=self.warehouse,
+            section=self.section,
+            movement_type='IN',
+            quantity=dec_qty,
+            unit_quantity=dec_unit_qty,
+            reference=reference,
+            source=source,
+            notes=f"Batch {batch_number} added",
+            previous_balance=old_qty,
+            new_balance=self.quantity
+        )
         
         return batch
 
@@ -713,6 +741,8 @@ class Stock(models.Model):
             quantity__gt=0
         ).exclude(
             expiry_date__lt=date.today()
+        ).exclude(
+            quality_status='rejected'
         ).order_by('expiry_date', 'received_date')
 
     def consume_fifo(self, qty, reference="", user=None):
@@ -968,11 +998,20 @@ class StockBatch(models.Model):
         if qty > self.quantity:
             raise ValueError(f"Insufficient quantity in batch {self.batch_number}")
         
-        self.quantity -= qty
+        dec_qty = Decimal(str(qty))
+
+        # Update batch quantity
+        self.quantity = (self.quantity - dec_qty).quantize(Decimal('0.01'))
         self.save()
         
-        self.stock.quantity -= (qty * self.unit_quantity)
-        self.stock.save()
+        # Delegate stock reduction to the Stock model's method
+        self.stock.remove_stock(
+            qty=qty,
+            reference=reference,
+            source='sale',
+            notes=f"Consumed from batch {self.batch_number}",
+            user=user
+        )
         
         return True
 
