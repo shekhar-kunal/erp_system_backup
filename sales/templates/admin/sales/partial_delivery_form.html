@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Partial Delivery for Order SO-{{ order.id }}</h1>
+
+<form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Submit Partial Delivery" class="default">
+</form>
+
+<p><a href="../../{{ order.id }}/change/">Back to Order</a></p>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Configure Columns – Units{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_label|capfirst }}</a>
+  &rsaquo; <a href="{{ changelist_url }}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; Configure Columns
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Configure Unit List Columns</h1>
+
+<p style="color:#555; margin-bottom:20px;">
+  Drag rows to reorder. Check to show, uncheck to hide.
+  <strong>Name</strong> is always shown and cannot be removed.
+</p>
+
+<form method="post" id="col-form">
+  {% csrf_token %}
+  <input type="hidden" name="col_order" id="col-order">
+
+  <div id="col-list" style="max-width:480px; border:1px solid #ddd; border-radius:4px; overflow:hidden;">
+    {% for col in columns_config %}
+    <div class="col-row{% if col.required %} col-required{% endif %}"
+         data-field="{{ col.field }}"
+         draggable="true"
+         style="display:flex; align-items:center; padding:10px 14px; background:{% if forloop.counter|divisibleby:2 %}#f9f9f9{% else %}#fff{% endif %}; border-bottom:1px solid #eee; gap:12px; cursor:default;">
+
+      <span class="drag-handle"
+            style="color:#bbb; font-size:18px; line-height:1; cursor:{% if col.required %}default{% else %}grab{% endif %}; user-select:none;"
+            title="{% if col.required %}Required column{% else %}Drag to reorder{% endif %}">
+        {% if col.required %}⊘{% else %}⠿{% endif %}
+      </span>
+
+      {% if col.required %}
+        <input type="checkbox" checked disabled style="width:16px;height:16px;">
+        <input type="hidden" name="columns" value="{{ col.field }}">
+      {% else %}
+        <input type="checkbox" name="columns" value="{{ col.field }}"
+               id="col_{{ col.field }}"
+               {% if col.visible %}checked{% endif %}
+               style="width:16px;height:16px; cursor:pointer;">
+      {% endif %}
+
+      <label for="col_{{ col.field }}"
+             style="margin:0; font-size:14px; cursor:{% if col.required %}default{% else %}pointer{% endif %}; color:{% if col.required %}#999{% else %}#333{% endif %};">
+        {{ col.label }}
+        {% if col.required %}<span style="font-size:11px; color:#aaa;">(required)</span>{% endif %}
+      </label>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:18px; display:flex; gap:10px; align-items:center;">
+    <input type="submit" value="Save Configuration" class="default button">
+    <a href="{% url 'admin:products_unit_configure_columns' %}?reset=1" class="button"
+       onclick="return confirm('Reset columns to default?')">Reset to Default</a>
+    <a href="{{ changelist_url }}" class="button cancel-link">Cancel</a>
+  </div>
+</form>
+
+<style>
+  .col-row.drag-over { background: #e8f0fe !important; }
+  .col-row.dragging  { opacity: 0.4; }
+  .col-required .drag-handle { cursor: default !important; }
+</style>
+
+<script>
+(function () {
+  const container = document.getElementById('col-list');
+  let dragging = null;
+
+  container.querySelectorAll('.col-row:not(.col-required)').forEach(function(row) {
+    row.addEventListener('dragstart', function(e) {
+      dragging = row;
+      setTimeout(function() { row.classList.add('dragging'); }, 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', function() {
+      dragging = null;
+      row.classList.remove('dragging');
+      container.querySelectorAll('.col-row').forEach(function(r) {
+        r.classList.remove('drag-over');
+      });
+    });
+  });
+
+  container.querySelectorAll('.col-row').forEach(function(row) {
+    row.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      if (!dragging || dragging === row) return;
+      container.querySelectorAll('.col-row').forEach(function(r) {
+        r.classList.remove('drag-over');
+      });
+      row.classList.add('drag-over');
+      const rows = Array.from(container.querySelectorAll('.col-row'));
+      const fromIdx = rows.indexOf(dragging);
+      const toIdx   = rows.indexOf(row);
+      if (fromIdx < toIdx) {
+        row.after(dragging);
+      } else {
+        row.before(dragging);
+      }
+    });
+    row.addEventListener('dragleave', function() {
+      row.classList.remove('drag-over');
+    });
+  });
+
+  document.getElementById('col-form').addEventListener('submit', function() {
+    const order = Array.from(container.querySelectorAll('.col-row'))
+                       .map(function(r) { return r.dataset.field; });
+    document.getElementById('col-order').value = order.join(',');
+  });
+})();
+</script>
+{% endblock %}

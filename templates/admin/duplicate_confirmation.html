@@ -1,0 +1,87 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .confirmation-box {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 30px;
+        background: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 5px solid #f0ad4e;
+    }
+    .confirmation-box h2 {
+        color: #f0ad4e;
+        margin-bottom: 20px;
+        font-size: 24px;
+    }
+    .confirmation-box p {
+        font-size: 16px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+    .button-confirm {
+        padding: 10px 20px;
+        background: #5cb85c;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-right: 10px;
+    }
+    .button-cancel {
+        padding: 10px 20px;
+        background: #d9534f;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .button-confirm:hover, .button-cancel:hover {
+        opacity: 0.9;
+    }
+    .back-link {
+        margin-top: 30px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="confirmation-box">
+        <h2>⚠️ Duplicate {{ object_type }} Detected</h2>
+        
+        <p>
+            A {{ object_type|lower }} with the name <strong>"{{ object_name }}"</strong> already exists in the system.
+        </p>
+        
+        <p style="color: #666;">
+            Are you sure you want to save this as a duplicate entry?
+        </p>
+        
+        <form method="post" style="display: inline-block;">
+            {% csrf_token %}
+            <button type="submit" name="confirm" value="yes" class="button-confirm">
+                ✅ Yes, save anyway
+            </button>
+        </form>
+        
+        <form method="post" style="display: inline-block;">
+            {% csrf_token %}
+            <button type="submit" name="cancel" value="yes" class="button-cancel">
+                ❌ No, cancel
+            </button>
+        </form>
+        
+        <p class="back-link">
+            <a href="{{ back_url }}" style="color: #337ab7;">← Go back to vendor list</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

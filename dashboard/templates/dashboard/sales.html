@@ -1,0 +1,144 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Sales Dashboard — ERP{% endblock %}
+{% block page_title %}💰 Sales Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card success">
+        <h3>Today's Revenue</h3>
+        <div class="stat-number">${{ today_revenue|floatformat:0 }}</div>
+        <div class="stat-sub">Confirmed / Completed</div>
+    </div>
+    <div class="stat-card success">
+        <h3>This Month</h3>
+        <div class="stat-number">${{ month_revenue|floatformat:0 }}</div>
+        <div class="stat-sub">Month-to-date revenue</div>
+    </div>
+    <div class="stat-card warning">
+        <h3>Confirmed Orders</h3>
+        <div class="stat-number">{{ confirmed_orders }}</div>
+        <div class="stat-sub">Pending fulfilment</div>
+    </div>
+    <div class="stat-card success">
+        <h3>Completed Orders</h3>
+        <div class="stat-number">{{ completed_orders }}</div>
+        <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card">
+        <h3>Draft Orders</h3>
+        <div class="stat-number">{{ draft_orders }}</div>
+        <div class="stat-sub">Not yet confirmed</div>
+    </div>
+    <div class="stat-card danger">
+        <h3>Cancelled</h3>
+        <div class="stat-number">{{ cancelled_orders }}</div>
+        <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card info">
+        <h3>Total Customers</h3>
+        <div class="stat-number">{{ total_customers }}</div>
+        <div class="stat-sub">Registered accounts</div>
+    </div>
+</div>
+
+<h2 class="section-title">📈 Analytics</h2>
+<div class="charts-grid">
+    <div class="chart-card">
+        <h3>7-Day Sales Trend</h3>
+        <div class="chart-container">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>Orders by Status</h3>
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<h2 class="section-title">🏆 Top Customers &amp; Recent Orders</h2>
+<div class="tables-grid">
+    <div class="table-card">
+        <h3>Top Customers by Revenue</h3>
+        <table>
+            <thead><tr><th>#</th><th>Customer</th><th>Total Sales</th></tr></thead>
+            <tbody>
+                {% for c in top_customers %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ c.full_name }}</td>
+                    <td class="amount">${{ c.total_sales|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="no-data">No data</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-card">
+        <h3>Recent Sales Orders</h3>
+        <table>
+            <thead><tr><th>Order #</th><th>Customer</th><th>Date</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for o in recent_orders %}
+                <tr>
+                    <td>{{ o.order_number }}</td>
+                    <td>{{ o.customer.full_name }}</td>
+                    <td>{{ o.order_date|date:"M d" }}</td>
+                    <td>
+                        {% if o.status == 'completed' %}
+                            <span class="badge badge-success">{{ o.get_status_display }}</span>
+                        {% elif o.status == 'confirmed' %}
+                            <span class="badge badge-warning">{{ o.get_status_display }}</span>
+                        {% elif o.status == 'cancelled' %}
+                            <span class="badge badge-danger">{{ o.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge badge-secondary">{{ o.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="no-data">No recent orders</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+new Chart(salesCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels }},
+        datasets: [{
+            label: 'Revenue ($)',
+            data: {{ chart_sales }},
+            backgroundColor: 'rgba(76,175,80,0.7)',
+            borderColor: '#4caf50',
+            borderWidth: 1, borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+    }
+});
+
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ status_labels }},
+        datasets: [{ data: {{ status_counts }}, backgroundColor: ['#9e9e9e','#ff9800','#4caf50','#f44336'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+{% endblock %}

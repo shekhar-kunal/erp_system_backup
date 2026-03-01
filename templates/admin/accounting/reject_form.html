@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block content %}
+<div id="content-main">
+    <form method="post">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            <h2>Reject Journal Entry: {{ entry.entry_number }}</h2>
+            
+            <div class="form-row">
+                <label for="reason">Rejection Reason:</label>
+                <textarea id="reason" name="reason" rows="4" cols="50" required></textarea>
+            </div>
+        </fieldset>
+        
+        <div class="submit-row">
+            <input type="submit" value="Reject Entry" class="default" style="background-color: #ba2121;">
+            <a href="{% url 'admin:accounting_journalentry_change' entry.id %}" class="button">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

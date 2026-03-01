@@ -1,0 +1,83 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+    <div class="dashboard-modules">
+        <div class="module">
+            <h2>{% trans 'Quick Stats' %}</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ total_vendors }}</div>
+                    <div class="stat-label">{% trans 'Active Vendors' %}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ active_pos }}</div>
+                    <div class="stat-label">{% trans 'Active POs' %}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ pending_receipts }}</div>
+                    <div class="stat-label">{% trans 'Pending Receipts' %}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ monthly_purchases }}</div>
+                    <div class="stat-label">{% trans 'Monthly Purchases' %}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="module">
+            <h2>{% trans 'Recent Purchase Orders' %}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{% trans 'PO Number' %}</th>
+                        <th>{% trans 'Vendor' %}</th>
+                        <th>{% trans 'Date' %}</th>
+                        <th>{% trans 'Status' %}</th>
+                        <th>{% trans 'Total' %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for po in recent_pos %}
+                    <tr>
+                        <td><a href="{% url 'admin:purchasing_purchaseorder_change' po.id %}">{{ po.po_number }}</a></td>
+                        <td>{{ po.vendor.name }}</td>
+                        <td>{{ po.order_date }}</td>
+                        <td>{{ po.get_status_display }}</td>
+                        <td>{{ po.total_amount_display }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">{% trans 'No recent orders' %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+    .stat-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 20px;
+        text-align: center;
+    }
+    .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #007bff;
+    }
+    .stat-label {
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}

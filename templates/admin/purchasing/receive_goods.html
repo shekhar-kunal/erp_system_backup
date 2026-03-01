@@ -1,0 +1,537 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .receipt-form table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+    .receipt-form th {
+        background: #f8f9fa;
+        padding: 10px;
+        text-align: left;
+        font-weight: bold;
+    }
+    .receipt-form td {
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .receipt-form input[type="number"] {
+        width: 100px;
+        padding: 5px;
+    }
+    .receipt-form select {
+        padding: 5px;
+    }
+    .help-text {
+        color: #6c757d;
+        font-size: 0.875em;
+        margin-top: 5px;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 5px;
+        padding: 5px;
+        background-color: #fff8f8;
+        border-radius: 3px;
+    }
+    .quantity-input.error {
+        border: 2px solid #dc3545;
+        background-color: #fff8f8;
+    }
+    .quantity-input.valid {
+        border: 2px solid #28a745;
+        background-color: #f8fff8;
+    }
+    .max-quantity {
+        font-weight: bold;
+        color: #28a745;
+    }
+    #validation-summary {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #856404;
+    }
+    #validation-summary h3 {
+        margin-top: 0;
+        color: #856404;
+        font-size: 16px;
+    }
+    #validation-errors-list {
+        margin: 10px 0 0 20px;
+        padding: 0;
+    }
+    #validation-errors-list li {
+        margin-bottom: 5px;
+    }
+    .remaining-badge {
+        display: inline-block;
+        background-color: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.875em;
+        margin-left: 5px;
+    }
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background-color: #e9ecef;
+        border-radius: 2px;
+        margin-top: 5px;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background-color: #28a745;
+        transition: width 0.3s ease;
+    }
+    .submit-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 20px 0;
+    }
+    .submit-row .default {
+        background-color: #28a745;
+    }
+    .submit-row .default:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+    .warning-message {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{% trans 'Receive Goods' %} – {{ order.po_number }}</h1>
+    
+    <div class="module">
+        <h2>{% trans 'Order Information' %}</h2>
+        <table>
+            <tr>
+                <th>{% trans 'Vendor' %}:</th>
+                <td>{{ order.vendor.name }}</td>
+                <th>{% trans 'Order Date' %}:</th>
+                <td>{{ order.order_date }}</td>
+            </tr>
+            <tr>
+                <th>{% trans 'Expected Date' %}:</th>
+                <td>{{ order.expected_date|default:"—" }}</td>
+                <th>{% trans 'Warehouse' %}:</th>
+                <td>{{ order.warehouse.name }}</td>
+            </tr>
+            <tr>
+                <th>{% trans 'Order Status' %}:</th>
+                <td colspan="3">
+                    <span style="color: {% if order.status == 'confirmed' %}#007bff{% elif order.status == 'partial' %}#fd7e14{% else %}#28a745{% endif %}; font-weight: bold;">
+                        {{ order.get_status_display }}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Validation Summary Section -->
+    <div id="validation-summary" style="display:none;">
+        <h3>{% trans '⚠ Validation Issues Detected' %}</h3>
+        <ul id="validation-errors-list">
+        </ul>
+    </div>
+
+    <form method="post" class="receipt-form" id="receipt-form">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        
+        <div class="module">
+            <h2>{% trans 'Items to Receive' %}</h2>
+            <div class="warning-message" id="no-items-warning" {% if formset.forms %}style="display:none;"{% endif %}>
+                {% trans 'No items available to receive. All items may be fully received.' %}
+            </div>
+            
+            <table id="receipt-items-table">
+                <thead>
+                    <tr>
+                        <th>{% trans 'Product' %}</th>
+                        <th>{% trans 'Ordered' %}</th>
+                        <th>{% trans 'Received' %}</th>
+                        <th>{% trans 'Remaining' %}</th>
+                        <th>{% trans 'To Receive' %}</th>
+                        <th>{% trans 'Batch #' %}</th>
+                        <th>{% trans 'Expiry' %}</th>
+                        <th>{% trans 'Quality' %}</th>
+                        <th>{% trans 'Progress' %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for form in formset %}
+                    <tr class="receipt-row" 
+                        data-max-qty="{{ form.instance.order_line.remaining_quantity|floatformat:2|default:0 }}"
+                        data-product-id="{{ form.instance.product.id }}"
+                        data-order-line-id="{{ form.instance.order_line.id }}">
+                        
+                        <td>
+                            <strong>{{ form.instance.product.name }}</strong>
+                            {% if form.instance.product.sku %}
+                                <br><small class="help-text">SKU: {{ form.instance.product.sku }}</small>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="ordered-qty">{{ form.instance.order_line.quantity|floatformat:2 }}</td>
+                        
+                        <td class="received-qty">{{ form.instance.order_line.received_quantity|floatformat:2 }}</td>
+                        
+                        <td class="remaining-qty">
+                            <span class="remaining-value">{{ form.instance.order_line.remaining_quantity|floatformat:2|default:0 }}</span>
+                            <span class="remaining-badge">{% trans 'left' %}</span>
+                        </td>
+                        
+                        <td>
+                            {{ form.id }}
+                            {{ form.order_line.as_hidden }}
+                            {{ form.product.as_hidden }}
+                            <div class="quantity-field">
+                                {{ form.quantity_received }}
+                                <div class="help-text">
+                                    <span>{% trans 'Max:' %}</span> 
+                                    <span class="max-quantity">{{ form.instance.order_line.remaining_quantity|floatformat:2|default:0 }}</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-bar-fill" style="width: 0%;"></div>
+                                </div>
+                                <div class="error-message" style="display:none;"></div>
+                            </div>
+                            {% if form.quantity_received.errors %}
+                                <div class="error-message">{{ form.quantity_received.errors }}</div>
+                            {% endif %}
+                        </td>
+                        
+                        <td>{{ form.batch_number }}</td>
+                        
+                        <td>{{ form.expiry_date }}</td>
+                        
+                        <td>{{ form.quality_status }}</td>
+                        
+                        <td>
+                            <div class="receipt-status" style="font-size:0.875em;">
+                                <span class="current-receipt">0</span>/<span class="max-qty-display">{{ form.instance.order_line.remaining_quantity|floatformat:2|default:0 }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 20px;">
+                            {% trans 'No pending items to receive.' %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="submit-row">
+            <input type="submit" value="{% trans 'Receive Goods' %}" class="default" id="submit-btn">
+            <a href="{% url 'admin:purchasing_purchaseorder_change' order.id %}" class="button cancel-link">{% trans 'Cancel' %}</a>
+            <button type="button" class="button" id="reset-btn" style="background-color:#6c757d;">{% trans 'Reset All' %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+(function($) {
+    $(document).ready(function() {
+        // STEP 1: Initialize variables
+        let hasErrors = false;
+        
+        // STEP 2: Add validation on input change
+        $('.quantity-received-input').on('input', function() {
+            validateQuantity($(this));
+            updateProgressBar($(this));
+            updateValidationSummary();
+            updateSubmitButton();
+        });
+        
+        // STEP 3: Add validation on blur (when field loses focus)
+        $('.quantity-received-input').on('blur', function() {
+            validateQuantity($(this), true); // true = show all messages
+            updateProgressBar($(this));
+        });
+        
+        // STEP 4: Add validation on form submit
+        $('#receipt-form').on('submit', function(e) {
+            let hasErrors = false;
+            let errorMessages = [];
+            
+            $('.quantity-received-input').each(function() {
+                if (!validateQuantity($(this), true)) {
+                    hasErrors = true;
+                    const $row = $(this).closest('tr');
+                    const productName = $row.find('td:first').text().trim();
+                    const maxQty = $row.data('max-qty');
+                    const currentQty = parseFloat($(this).val()) || 0;
+                    
+                    if (currentQty <= 0) {
+                        errorMessages.push(productName + ': Quantity must be greater than 0');
+                    } else if (currentQty > maxQty) {
+                        errorMessages.push(productName + ': Cannot receive more than ' + maxQty);
+                    }
+                }
+            });
+            
+            if (hasErrors) {
+                e.preventDefault();
+                
+                // Show detailed error message
+                let message = '{% trans "Please fix the following errors before submitting:" %}\n\n';
+                message += errorMessages.join('\n');
+                alert(message);
+                
+                // Scroll to first error
+                $('.quantity-input.error').first().focus();
+            } else {
+                // Show confirmation dialog
+                const totalItems = $('.receipt-row').length;
+                const totalQuantity = calculateTotalQuantity();
+                
+                if (!confirm(
+                    '{% trans "You are about to receive" %} ' + totalQuantity + ' {% trans "items across" %} ' + 
+                    totalItems + ' {% trans "lines. Continue?" %}'
+                )) {
+                    e.preventDefault();
+                }
+            }
+        });
+        
+        // STEP 5: Reset button functionality
+        $('#reset-btn').on('click', function() {
+            if (confirm('{% trans "Reset all quantity fields to 0?" %}')) {
+                $('.quantity-received-input').each(function() {
+                    $(this).val(0);
+                    validateQuantity($(this));
+                    updateProgressBar($(this));
+                });
+                updateValidationSummary();
+                updateSubmitButton();
+            }
+        });
+        
+        // STEP 6: Validation function
+        function validateQuantity($input, showMessages = true) {
+            const $row = $input.closest('tr');
+            const maxQty = parseFloat($row.data('max-qty')) || 0;
+            const currentQty = parseFloat($input.val()) || 0;
+            const $errorDiv = $row.find('.error-message');
+            const $helpText = $row.find('.help-text');
+            const $statusSpan = $row.find('.current-receipt');
+            
+            // Reset styles
+            $input.removeClass('error valid');
+            $errorDiv.hide();
+            
+            // Update status display
+            $statusSpan.text(currentQty.toFixed(2));
+            
+            // Validate
+            if (currentQty < 0) {
+                if (showMessages) {
+                    $input.addClass('error');
+                    $errorDiv.text('{% trans "Quantity cannot be negative" %}').show();
+                }
+                return false;
+            }
+            
+            if (currentQty === 0) {
+                if (showMessages) {
+                    $input.addClass('error');
+                    $errorDiv.text('{% trans "Quantity must be greater than 0" %}').show();
+                }
+                return false;
+            }
+            
+            if (currentQty > maxQty) {
+                if (showMessages) {
+                    $input.addClass('error');
+                    $errorDiv.text('{% trans "Cannot receive more than" %} ' + maxQty).show();
+                }
+                return false;
+            }
+            
+            // Valid input
+            $input.addClass('valid');
+            
+            // Update help text with remaining after this receipt
+            const remainingAfter = maxQty - currentQty;
+            if (remainingAfter >= 0) {
+                let helpHtml = '{% trans "Max:" %} <span class="max-quantity">' + maxQty.toFixed(2) + '</span>';
+                if (remainingAfter > 0) {
+                    helpHtml += '<br>{% trans "Remaining after:" %} ' + remainingAfter.toFixed(2);
+                } else {
+                    helpHtml += '<br><span style="color:#28a745;">{% trans "Fully received!" %}</span>';
+                }
+                $helpText.html(helpHtml);
+            }
+            
+            return true;
+        }
+        
+        // STEP 7: Update progress bar
+        function updateProgressBar($input) {
+            const $row = $input.closest('tr');
+            const maxQty = parseFloat($row.data('max-qty')) || 0;
+            const currentQty = parseFloat($input.val()) || 0;
+            
+            if (maxQty > 0) {
+                const percentage = (currentQty / maxQty) * 100;
+                const $progressBar = $row.find('.progress-bar-fill');
+                $progressBar.css('width', Math.min(percentage, 100) + '%');
+                
+                // Change color based on percentage
+                if (percentage >= 100) {
+                    $progressBar.css('background-color', '#28a745');
+                } else if (percentage >= 50) {
+                    $progressBar.css('background-color', '#ffc107');
+                } else {
+                    $progressBar.css('background-color', '#007bff');
+                }
+            }
+        }
+        
+        // STEP 8: Update validation summary
+        function updateValidationSummary() {
+            const $summary = $('#validation-summary');
+            const $errorsList = $('#validation-errors-list');
+            let errors = [];
+            
+            $('.quantity-received-input').each(function() {
+                const $row = $(this).closest('tr');
+                const productName = $row.find('td:first').text().trim();
+                const maxQty = parseFloat($row.data('max-qty')) || 0;
+                const currentQty = parseFloat($(this).val()) || 0;
+                
+                if (currentQty <= 0) {
+                    errors.push(productName + ': ' + '{% trans "Quantity must be greater than 0" %}');
+                } else if (currentQty > maxQty) {
+                    errors.push(productName + ': ' + '{% trans "Cannot receive more than" %} ' + maxQty);
+                }
+            });
+            
+            if (errors.length > 0) {
+                $errorsList.empty();
+                errors.forEach(function(error) {
+                    $errorsList.append('<li>' + error + '</li>');
+                });
+                $summary.show();
+            } else {
+                $summary.hide();
+            }
+        }
+        
+        // STEP 9: Update submit button state
+        function updateSubmitButton() {
+            const $submitBtn = $('#submit-btn');
+            let isValid = true;
+            
+            $('.quantity-received-input').each(function() {
+                const $row = $(this).closest('tr');
+                const maxQty = parseFloat($row.data('max-qty')) || 0;
+                const currentQty = parseFloat($(this).val()) || 0;
+                
+                if (currentQty <= 0 || currentQty > maxQty) {
+                    isValid = false;
+                }
+            });
+            
+            // Also check if at least one item has quantity > 0
+            const hasPositiveQuantity = $('.quantity-received-input').toArray().some(input => {
+                return parseFloat($(input).val()) > 0;
+            });
+            
+            if (isValid && hasPositiveQuantity) {
+                $submitBtn.prop('disabled', false);
+                $submitBtn.css('opacity', '1');
+            } else {
+                $submitBtn.prop('disabled', true);
+                $submitBtn.css('opacity', '0.5');
+            }
+        }
+        
+        // STEP 10: Calculate total quantity
+        function calculateTotalQuantity() {
+            let total = 0;
+            $('.quantity-received-input').each(function() {
+                total += parseFloat($(this).val()) || 0;
+            });
+            return total.toFixed(2);
+        }
+        
+        // STEP 11: Initialize all fields
+        $('.quantity-received-input').each(function() {
+            // Store initial value
+            const initialValue = $(this).val();
+            
+            // Set max attribute
+            const $row = $(this).closest('tr');
+            const maxQty = $row.data('max-qty');
+            if (maxQty) {
+                $(this).attr('max', maxQty);
+            }
+            
+            // Initial validation if value > 0
+            if (parseFloat(initialValue) > 0) {
+                validateQuantity($(this), false);
+                updateProgressBar($(this));
+            }
+        });
+        
+        // STEP 12: Auto-scroll to first error on summary click
+        $('#validation-summary').on('click', function() {
+            const $firstError = $('.quantity-input.error').first();
+            if ($firstError.length) {
+                $('html, body').animate({
+                    scrollTop: $firstError.offset().top - 100
+                }, 500);
+                $firstError.focus();
+            }
+        });
+        
+        // Initial updates
+        updateValidationSummary();
+        updateSubmitButton();
+        
+        // Add keyboard shortcuts
+        $(document).on('keydown', function(e) {
+            // Ctrl+Enter to submit
+            if (e.ctrlKey && e.keyCode === 13) {
+                if (!$('#submit-btn').prop('disabled')) {
+                    $('#receipt-form').submit();
+                }
+            }
+            // Esc to cancel
+            if (e.keyCode === 27) {
+                if (confirm('{% trans "Cancel receiving and go back?" %}')) {
+                    window.location.href = '{% url "admin:purchasing_purchaseorder_change" order.id %}';
+                }
+            }
+        });
+        
+    });
+})(django.jQuery);
+</script>
+{% endblock %}

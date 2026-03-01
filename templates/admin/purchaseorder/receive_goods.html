@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Receive Goods – {{ order.po_number }}</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Ordered</th>
+                <th>Already Received</th>
+                <th>To Receive Now</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for form in formset %}
+            <tr>
+                <td>{{ form.instance.product.name }}</td>
+                <td>{{ form.instance.quantity }}</td>
+                <td>{{ form.instance.received_quantity }}</td>
+                <td>
+                    {{ form.id }}
+                    {{ form.received_quantity }}
+                    {% if form.received_quantity.help_text %}<br><small>{{ form.received_quantity.help_text }}</small>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <input type="submit" value="Receive Selected Quantities" class="default">
+</form>
+{% endblock %}

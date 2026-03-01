@@ -1,0 +1,124 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .count-sheet-form {
+        max-width: 600px;
+        margin: 20px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    .selected-items {
+        background: white;
+        padding: 15px;
+        border-left: 4px solid #79aec8;
+        margin-bottom: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .selected-items table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .selected-items th {
+        text-align: left;
+        padding: 8px;
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .selected-items td {
+        padding: 8px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .help-text {
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ title }}</h1>
+    
+    <div class="selected-items">
+        <h3>Selected Items ({{ queryset|length }})</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Warehouse</th>
+                    <th>Current Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in queryset %}
+                <tr>
+                    <td>{{ stock.product.name }}</td>
+                    <td>{{ stock.product.sku }}</td>
+                    <td>{{ stock.warehouse.name }}</td>
+                    <td>
+                        {% if stock.unit %}
+                            {{ stock.total_units|floatformat:2 }} {{ stock.unit.code }}
+                        {% else %}
+                            {{ stock.quantity }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="count-sheet-form">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="apply" value="1">
+            
+            <div style="margin-bottom: 15px;">
+                <label for="count_name" style="display: block; margin-bottom: 5px; font-weight: bold;">
+                    Count Sheet Name:
+                </label>
+                <input type="text" 
+                       id="count_name" 
+                       name="count_name" 
+                       required 
+                       style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
+                       placeholder="e.g., Monthly Count - March 2024">
+                <div class="help-text">Give this count sheet a descriptive name</div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label for="warehouse" style="display: block; margin-bottom: 5px; font-weight: bold;">
+                    Warehouse:
+                </label>
+                <select id="warehouse" 
+                        name="warehouse" 
+                        required 
+                        style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="">Select a warehouse...</option>
+                    {% for wh in warehouses %}
+                    <option value="{{ wh.id }}">{{ wh.name }} ({{ wh.code }})</option>
+                    {% endfor %}
+                </select>
+                <div class="help-text">Select the warehouse where the count will be performed</div>
+            </div>
+            
+            <div class="submit-row" style="margin-top: 20px;">
+                <input type="submit" value="Create Count Sheet" class="default" style="padding: 10px 20px;">
+                <a href="{% url 'admin:inventory_stock_changelist' %}" class="button cancel-link">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="help-text">
+        <p><strong>Note:</strong> A stock count sheet will be created with the selected items. 
+        You can then record the actual counted quantities and approve the count when completed.</p>
+    </div>
+</div>
+{% endblock %}

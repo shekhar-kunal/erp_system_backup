@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,14 +37,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
+    'django_select2',
+    
 
     # ERP apps
+    'core',
+    'rbac',
+    'mptt',
+    'config_settings',
     'products',
+    'django_filters',
+    'rest_framework',
     'inventory',
     'sales',
     'purchasing',
     'accounting',
     'dashboard',
+    'exports',
+    'reports',
 ]
 
 MIDDLEWARE = [
@@ -53,22 +64,29 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'rbac.middleware.ERPSecurityMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config_settings.middleware.ERPSetupMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Your templates directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'config_settings.context_processors.currencies',
+                'config_settings.context_processors.erp_settings',
             ],
         },
     },
@@ -123,3 +141,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+# Media files (uploaded files)
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = '/admin/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/admin/login/'
+
+INTERNAL_IPS = ['127.0.0.1']

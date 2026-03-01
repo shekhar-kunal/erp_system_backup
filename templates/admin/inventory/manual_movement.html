@@ -1,0 +1,81 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .movement-form {
+      max-width: 600px;
+      margin: 20px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .stock-info {
+      background: #fff;
+      padding: 15px;
+      border-left: 4px solid #79aec8;
+      margin-bottom: 20px;
+    }
+    .stock-info h3 {
+      margin-top: 0;
+      color: #417690;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  
+  <div class="stock-info">
+    <h3>Current Stock Information</h3>
+    <table class="table">
+      <tr>
+        <th>Product:</th>
+        <td>{{ stock.product.name }} ({{ stock.product.sku }})</td>
+      </tr>
+      <tr>
+        <th>Warehouse:</th>
+        <td>{{ stock.warehouse.name }} ({{ stock.warehouse.code }})</td>
+      </tr>
+      <tr>
+        <th>Section:</th>
+        <td>{{ stock.section.full_location|default:"Main Area" }}</td>
+      </tr>
+      <tr>
+        <th>Current Quantity:</th>
+        <td>
+          <strong>
+            {% if stock.unit %}
+              {{ stock.total_units|floatformat:2 }} {{ stock.unit.code }}
+              <br><small>({{ stock.quantity|floatformat:2 }} base units)</small>
+            {% else %}
+              {{ stock.quantity|floatformat:2 }} base units
+            {% endif %}
+          </strong>
+        </td>
+      </tr>
+      <tr>
+        <th>Unit Conversion:</th>
+        <td>1 {{ stock.unit.code|default:"unit" }} = {{ stock.unit_quantity }} base units</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="movement-form">
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="submit-row">
+        <input type="submit" value="Process Movement" class="default">
+        <a href="{% url 'admin:inventory_stock_change' stock.id %}" class="button cancel-link">Cancel</a>
+      </div>
+    </form>
+    <p class="help">
+      <strong>Note:</strong> Enter positive quantity to add stock, negative to remove stock.
+      Example: +50 to add 50 units, -30 to remove 30 units.
+    </p>
+  </div>
+</div>
+{% endblock %}

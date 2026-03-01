@@ -1,0 +1,127 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Purchasing Dashboard — ERP{% endblock %}
+{% block page_title %}🛒 Purchasing Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card warning">
+        <h3>Month Spend</h3>
+        <div class="stat-number">${{ month_spend|floatformat:0 }}</div>
+        <div class="stat-sub">Confirmed + Done POs</div>
+    </div>
+    <div class="stat-card">
+        <h3>Draft POs</h3>
+        <div class="stat-number">{{ draft_pos }}</div>
+        <div class="stat-sub">Not yet confirmed</div>
+    </div>
+    <div class="stat-card warning">
+        <h3>Confirmed POs</h3>
+        <div class="stat-number">{{ confirmed_pos }}</div>
+        <div class="stat-sub">Pending receipt</div>
+    </div>
+    <div class="stat-card success">
+        <h3>Completed POs</h3>
+        <div class="stat-number">{{ done_pos }}</div>
+        <div class="stat-sub">Fully received</div>
+    </div>
+</div>
+
+<h2 class="section-title">📈 Analytics</h2>
+<div class="charts-grid">
+    <div class="chart-card">
+        <h3>7-Day Purchasing Spend</h3>
+        <div class="chart-container">
+            <canvas id="spendChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>PO Status Breakdown</h3>
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<h2 class="section-title">🏆 Top Vendors &amp; Recent POs</h2>
+<div class="tables-grid">
+    <div class="table-card">
+        <h3>Top Vendors by Spend</h3>
+        <table>
+            <thead><tr><th>#</th><th>Vendor</th><th>Total Spend</th></tr></thead>
+            <tbody>
+                {% for v in top_vendors %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ v.name }}</td>
+                    <td class="amount">${{ v.spend_total|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" class="no-data">No data</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-card">
+        <h3>Recent Purchase Orders</h3>
+        <table>
+            <thead><tr><th>PO #</th><th>Vendor</th><th>Date</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for po in recent_pos %}
+                <tr>
+                    <td>{{ po.po_number }}</td>
+                    <td>{{ po.vendor.name }}</td>
+                    <td>{{ po.order_date|date:"M d" }}</td>
+                    <td>
+                        {% if po.status == 'done' %}
+                            <span class="badge badge-success">{{ po.get_status_display }}</span>
+                        {% elif po.status == 'confirmed' %}
+                            <span class="badge badge-warning">{{ po.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge badge-secondary">{{ po.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="no-data">No recent purchase orders</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+const spendCtx = document.getElementById('spendChart').getContext('2d');
+new Chart(spendCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels }},
+        datasets: [{
+            label: 'Spend ($)',
+            data: {{ chart_spend }},
+            backgroundColor: 'rgba(255,152,0,0.7)',
+            borderColor: '#ff9800',
+            borderWidth: 1, borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+    }
+});
+
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ status_labels }},
+        datasets: [{ data: {{ status_counts }}, backgroundColor: ['#9e9e9e','#ff9800','#4caf50'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "reports/base.html" %}
+
+{% block title %}{{ title }} — ERP{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+{# ── Filter bar ── #}
+<div class="filter-bar">
+    <form method="get" style="display:contents;">
+        {% for field in form.visible_fields %}
+        <div class="filter-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary" style="align-self:flex-end;">
+            🔍 Apply
+        </button>
+    </form>
+
+    <div class="export-btns">
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=excel"
+           class="btn btn-success">📊 Excel</a>
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=csv"
+           class="btn btn-secondary">📄 CSV</a>
+        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=pdf"
+           class="btn btn-danger">🖨 PDF</a>
+    </div>
+</div>
+
+{# ── Summary KPI cards ── #}
+{% if summary %}
+<div class="summary-grid">
+    {% for key, val in summary.items %}
+    <div class="summary-card">
+        <h4>{{ key }}</h4>
+        <div class="value">{{ val }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ── Data table ── #}
+<div class="table-card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    {% for cell in row %}
+                    <td {% if cell|stringformat:"s"|slice:":1" == "-" or cell|add:0 == cell %}class="num"{% endif %}>
+                        {{ cell }}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ columns|length }}" class="table-empty">
+                        No records found for the selected filters.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="table-footer">Showing {{ rows|length }} record{{ rows|length|pluralize }}</div>
+</div>
+
+{% endblock %}

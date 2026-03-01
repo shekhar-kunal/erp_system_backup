@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ model_name }} Export</title>
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #222;
+    margin: 20px;
+  }
+  h1 {
+    font-size: 16px;
+    color: #366092;
+    margin-bottom: 4px;
+  }
+  .meta {
+    font-size: 9px;
+    color: #888;
+    margin-bottom: 16px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+  thead tr {
+    background: #366092;
+    color: #fff;
+  }
+  thead th {
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 9px;
+    font-weight: bold;
+    border: 1px solid #2a4f75;
+  }
+  tbody tr:nth-child(even) {
+    background: #f0f4f9;
+  }
+  tbody td {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    font-size: 9px;
+    vertical-align: top;
+    word-break: break-word;
+  }
+  .footer {
+    margin-top: 16px;
+    font-size: 9px;
+    color: #888;
+    border-top: 1px solid #ddd;
+    padding-top: 6px;
+  }
+</style>
+</head>
+<body>
+  <h1>{{ model_name }}</h1>
+  <div class="meta">
+    Exported {{ record_count }} record{{ record_count|pluralize }} &bull; {{ exported_at }}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        {% for header in headers %}
+          <th>{{ header }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          {% for cell in row %}
+            <td>{{ cell }}</td>
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr><td colspan="{{ headers|length }}" style="text-align:center;color:#999">No records</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if include_footer %}
+  <div class="footer">
+    Total: {{ record_count }} record{{ record_count|pluralize }} &bull; Exported on {{ exported_at }}
+  </div>
+  {% endif %}
+</body>
+</html>

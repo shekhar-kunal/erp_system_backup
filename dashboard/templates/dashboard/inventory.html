@@ -1,0 +1,151 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Inventory Dashboard — ERP{% endblock %}
+{% block page_title %}📦 Inventory Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Total SKUs</h3>
+        <div class="stat-number">{{ total_sku }}</div>
+        <div class="stat-sub">Stock entries</div>
+    </div>
+    <div class="stat-card warning">
+        <h3>Low Stock</h3>
+        <div class="stat-number">{{ low_stock }}</div>
+        <div class="stat-sub">Below reorder level</div>
+    </div>
+    <div class="stat-card danger">
+        <h3>Out of Stock</h3>
+        <div class="stat-number">{{ out_of_stock }}</div>
+        <div class="stat-sub">Zero quantity</div>
+    </div>
+    <div class="stat-card success">
+        <h3>Inventory Value</h3>
+        <div class="stat-number">${{ total_value|floatformat:0 }}</div>
+        <div class="stat-sub">At cost price</div>
+    </div>
+</div>
+
+<h2 class="section-title">📊 Analytics</h2>
+<div class="charts-grid">
+    <div class="chart-card">
+        <h3>7-Day Stock Movements</h3>
+        <div class="chart-container">
+            <canvas id="movChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>Inventory Value by Warehouse</h3>
+        <div class="chart-container">
+            <canvas id="whChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<h2 class="section-title">⚠️ Low Stock &amp; Warehouse Summary</h2>
+<div class="tables-grid">
+    <div class="table-card">
+        <h3>Low Stock Alerts</h3>
+        <table>
+            <thead><tr><th>Product</th><th>Warehouse</th><th>Qty</th><th>Reorder</th></tr></thead>
+            <tbody>
+                {% for s in low_stock_items %}
+                <tr>
+                    <td>{{ s.product.name }}</td>
+                    <td>{{ s.warehouse.name }}</td>
+                    <td><span class="badge {% if s.quantity == 0 %}badge-danger{% else %}badge-warning{% endif %}">{{ s.quantity }}</span></td>
+                    <td>{{ s.reorder_level }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="no-data">All stock levels are healthy</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-card">
+        <h3>Stock by Warehouse</h3>
+        <table>
+            <thead><tr><th>Warehouse</th><th>SKUs</th><th>Total Qty</th><th>Value</th></tr></thead>
+            <tbody>
+                {% for w in warehouses %}
+                <tr>
+                    <td>{{ w.name }}</td>
+                    <td>{{ w.wh_count|default:0 }}</td>
+                    <td>{{ w.wh_qty|floatformat:0|default:0 }}</td>
+                    <td class="amount">${{ w.wh_value|floatformat:0|default:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="no-data">No warehouses</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-card">
+        <h3>Recent Stock Movements</h3>
+        <table>
+            <thead><tr><th>Product</th><th>Warehouse</th><th>Type</th><th>Qty</th></tr></thead>
+            <tbody>
+                {% for m in recent_movements %}
+                <tr>
+                    <td>{{ m.product.name }}</td>
+                    <td>{{ m.warehouse.name }}</td>
+                    <td>
+                        {% if m.movement_type == 'IN' %}
+                            <span class="badge badge-success">IN</span>
+                        {% else %}
+                            <span class="badge badge-danger">OUT</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ m.quantity }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="no-data">No recent movements</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+const movCtx = document.getElementById('movChart').getContext('2d');
+new Chart(movCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels }},
+        datasets: [
+            { label: 'Stock IN', data: {{ chart_in }}, backgroundColor: 'rgba(76,175,80,0.7)', borderRadius: 3 },
+            { label: 'Stock OUT', data: {{ chart_out }}, backgroundColor: 'rgba(244,67,54,0.7)', borderRadius: 3 },
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { x: { stacked: false }, y: { beginAtZero: true } }
+    }
+});
+
+const whCtx = document.getElementById('whChart').getContext('2d');
+new Chart(whCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ wh_labels }},
+        datasets: [{
+            label: 'Value ($)',
+            data: {{ wh_values }},
+            backgroundColor: ['#1a237e','#3949ab','#5c6bc0','#7986cb','#9fa8da'],
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+    }
+});
+{% endblock %}

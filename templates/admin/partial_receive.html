@@ -1,0 +1,42 @@
+{% extends "admin/base_site.html" %}
+{% load static i18n %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<p>Purchase Order: <strong>PO-{{ order.id }}</strong> | Vendor: {{ order.vendor.name }}</p>
+<p>Status: <strong>{{ order.status|capfirst }}</strong></p>
+
+<form method="post">{% csrf_token %}
+  <table class="adminlist">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Ordered Qty</th>
+        <th>Receive Qty</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in form_data %}
+        <tr>
+          <td>{{ item.line.product.name }}</td>
+          <td>{{ item.line.quantity }}</td>
+          <td>
+            {{ item.form.receive_qty }}
+            {{ item.form.line_id }}
+          </td>
+          <td>
+            <button type="submit" name="line_id" value="{{ item.line.id }}" class="default">Receive</button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</form>
+
+<p>
+  <a href="../../{{ order.id }}/change/" class="button">Back to Order</a>
+</p>
+
+{% endblock %}

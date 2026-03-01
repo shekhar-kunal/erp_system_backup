@@ -1,0 +1,328 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Dashboard Grid Layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    /* Metric Cards */
+    .dashboard-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-left: 4px solid #79aec8;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .metric-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #447e9b;
+        line-height: 1.2;
+    }
+    .metric-label {
+        color: #666;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+    }
+    .metric-footer {
+        color: #999;
+        font-size: 0.85em;
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+        margin-top: 10px;
+    }
+    
+    /* Status Colors */
+    .text-success { color: #28a745; }
+    .text-warning { color: #fd7e14; }
+    .text-danger { color: #dc3545; }
+    .text-info { color: #17a2b8; }
+    .text-muted { color: #6c757d; }
+    
+    /* Tables */
+    .recent-orders {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    .recent-orders h2 {
+        margin-top: 0;
+        color: #447e9b;
+        font-size: 1.5em;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .order-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .order-table th {
+        text-align: left;
+        padding: 12px;
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+    }
+    .order-table td {
+        padding: 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .order-table tr:hover {
+        background: #f8f9fa;
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+    }
+    .quick-action-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #495057;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .quick-action-btn:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+        color: #79aec8;
+    }
+    
+    /* Feature Disabled Badge */
+    .feature-disabled {
+        opacity: 0.5;
+        filter: grayscale(50%);
+    }
+    .disabled-badge {
+        background: #6c757d;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7em;
+        margin-left: 8px;
+        text-transform: uppercase;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1 style="display: flex; align-items: center; gap: 10px;">
+        📊 Sales Dashboard
+        <span style="font-size: 0.6em; color: #6c757d; font-weight: normal;">
+            Last updated: {% now "F j, Y H:i" %}
+        </span>
+    </h1>
+    
+    <!-- Key Metrics Grid -->
+    <div class="dashboard-grid">
+        <!-- Customer Card -->
+        <div class="dashboard-card">
+            <div class="metric-label">👥 Customers</div>
+            <div class="metric-value">{{ total_customers }}</div>
+            <div class="metric-footer">
+                <span class="text-success">{{ active_customers }} Active</span>
+                {% if vip_customers %}
+                    | <span class="text-warning">{{ vip_customers }} VIP</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Today's Orders Card -->
+        <div class="dashboard-card">
+            <div class="metric-label">📦 Today's Orders</div>
+            <div class="metric-value">{{ orders_today }}</div>
+            <div class="metric-footer">
+                <span class="text-info">${{ orders_today_value|floatformat:0 }}</span>
+            </div>
+        </div>
+        
+        <!-- This Week's Orders Card -->
+        <div class="dashboard-card">
+            <div class="metric-label">📊 This Week</div>
+            <div class="metric-value">{{ orders_week }}</div>
+            <div class="metric-footer">
+                <span class="text-info">${{ orders_week_value|floatformat:0 }}</span>
+            </div>
+        </div>
+        
+        <!-- This Month's Orders Card -->
+        <div class="dashboard-card">
+            <div class="metric-label">📈 This Month</div>
+            <div class="metric-value">{{ orders_month }}</div>
+            <div class="metric-footer">
+                <span class="text-info">${{ orders_month_value|floatformat:0 }}</span>
+            </div>
+        </div>
+        
+        <!-- Receivables Card -->
+        <div class="dashboard-card">
+            <div class="metric-label">💰 Receivables</div>
+            <div class="metric-value">${{ total_receivable|floatformat:0 }}</div>
+            <div class="metric-footer">
+                <span class="{% if invoices_unpaid > 0 %}text-warning{% else %}text-success{% endif %}">
+                    {{ invoices_unpaid }} Unpaid
+                </span>
+                {% if invoices_overdue > 0 %}
+                    | <span class="text-danger">{{ invoices_overdue }} Overdue</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quotations Card (if enabled) -->
+        {% if settings.enable_quotations %}
+        <div class="dashboard-card">
+            <div class="metric-label">📋 Quotations</div>
+            <div class="metric-value">{{ quotations_pending }}</div>
+            <div class="metric-footer">
+                <span class="text-muted">Pending acceptance</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Recent Orders Table -->
+    <div class="recent-orders">
+        <h2>📋 Recent Orders</h2>
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr>
+                    <td>
+                        <a href="{% url 'admin:sales_salesorder_change' order.id %}" style="font-weight: 500;">
+                            {{ order.order_number }}
+                        </a>
+                    </td>
+                    <td>{{ order.customer.display_name }}</td>
+                    <td>{{ order.order_date|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if order.status == 'draft' %}
+                            <span style="color: #6c757d;">📝 Draft</span>
+                        {% elif order.status == 'confirmed' %}
+                            <span style="color: #007bff;">✅ Confirmed</span>
+                        {% elif order.status == 'partial' %}
+                            <span style="color: #fd7e14;">⏳ Partial</span>
+                        {% elif order.status == 'completed' %}
+                            <span style="color: #28a745;">✓ Completed</span>
+                        {% elif order.status == 'cancelled' %}
+                            <span style="color: #dc3545;">✗ Cancelled</span>
+                        {% else %}
+                            {{ order.get_status_display }}
+                        {% endif %}
+                    </td>
+                    <td><strong>${{ order.total_amount|floatformat:2 }}</strong></td>
+                    <td>
+                        {% if order.status == 'confirmed' %}
+                            <a href="{% url 'admin:salesorder-deliver' order.id %}" 
+                               style="color: #28a745; text-decoration: none;">📦 Deliver</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #6c757d; padding: 30px;">
+                        No orders found. <a href="{% url 'admin:sales_salesorder_add' %}">Create your first order</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="recent-orders">
+        <h2>⚡ Quick Actions</h2>
+        <div class="quick-actions">
+            <a href="{% url 'admin:sales_salesorder_add' %}" class="quick-action-btn">
+                ➕ New Sales Order
+            </a>
+            <a href="{% url 'admin:sales_customer_add' %}" class="quick-action-btn">
+                👤 New Customer
+            </a>
+            {% if settings.enable_quotations %}
+            <a href="{% url 'admin:sales_quotation_add' %}" class="quick-action-btn">
+                📋 New Quotation
+            </a>
+            {% endif %}
+            <a href="{% url 'admin:sales_salesinvoice_changelist' %}?status__exact=unpaid" class="quick-action-btn">
+                💰 View Unpaid Invoices
+            </a>
+            <a href="{% url 'admin:sales_salesorder_changelist' %}?status__exact=confirmed" class="quick-action-btn">
+                📦 Pending Deliveries
+            </a>
+            <a href="{% url 'admin:sales_salessettings_change' 1 %}" class="quick-action-btn">
+                ⚙️ Sales Settings
+            </a>
+        </div>
+    </div>
+    
+    <!-- Feature Status -->
+    {% if not settings.enable_quotations or not settings.enable_delivery_notes or not settings.enable_sales_returns %}
+    <div class="recent-orders" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+        <h2 style="color: #856404;">🔧 Disabled Features</h2>
+        <p style="color: #856404;">Some features are currently disabled. You can enable them in 
+        <a href="{% url 'admin:sales_salessettings_change' 1 %}" style="color: #856404; font-weight: bold;">Sales Settings</a>.</p>
+        <ul style="color: #856404;">
+            {% if not settings.enable_quotations %}
+            <li>Quotations are disabled</li>
+            {% endif %}
+            {% if not settings.enable_delivery_notes %}
+            <li>Delivery Notes are disabled</li>
+            {% endif %}
+            {% if not settings.enable_sales_returns %}
+            <li>Sales Returns are disabled</li>
+            {% endif %}
+            {% if not settings.enable_backorders %}
+            <li>Backorders are disabled</li>
+            {% endif %}
+            {% if not settings.enable_profit_tracking %}
+            <li>Profit Tracking is disabled</li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content %}
+<!-- Quick Actions Section -->
+<div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #417690;">
+    <h2 style="margin-top: 0; color: #417690;">⚡ Quick Actions</h2>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="{% url 'product_setup' %}" class="button" style="background: #417690; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            📦 Product Setup Wizard
+        </a>
+        <a href="{% url 'admin:products_product_changelist' %}" class="button" style="background: #79aec8; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            📋 View All Products
+        </a>
+        <a href="{% url 'admin:products_product_add' %}" class="button" style="background: #28a745; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            ➕ Add Product
+        </a>
+    </div>
+</div>
+
+<!-- ERP Global Settings Section -->
+<div style="margin-bottom: 20px; padding: 15px; background: #e8f4f8; border-radius: 5px; border-left: 4px solid #17a2b8;">
+    <h2 style="margin-top: 0; color: #17a2b8;">⚙️ ERP Global Configuration</h2>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        {% if erp_settings_configured %}
+            <a href="{% url 'admin:config_settings_erpsettings_changelist' %}" class="button" style="background: #17a2b8; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                🔧 View ERP Settings
+            </a>
+            <a href="{% url 'admin:config_settings_pricingconfig_changelist' %}" class="button" style="background: #28a745; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                💰 Pricing Config
+            </a>
+        {% else %}
+            <a href="{% url 'erp_setup' %}" class="button" style="background: #dc3545; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                🚀 Complete ERP Setup
+            </a>
+        {% endif %}
+        <a href="{% url 'admin:config_settings_modulestatus_changelist' %}" class="button" style="background: #6c757d; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            🔌 Module Manager
+        </a>
+    </div>
+    {% if erp_settings_configured %}
+        <p style="margin-top: 10px; color: #28a745; font-size: 0.9em;">
+            ✅ ERP System is configured. Critical settings are locked.
+        </p>
+    {% else %}
+        <p style="margin-top: 10px; color: #dc3545; font-size: 0.9em;">
+            ⚠️ ERP System not configured yet. Please complete the setup wizard.
+        </p>
+    {% endif %}
+</div>
+
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'admin:sales-dashboard' %}" class="button" style="background: #79aec8; padding: 10px 20px; color: white; text-decoration: none; border-radius: 4px;">
+        📊 Go to Sales Dashboard
+    </a>
+</div>
+
+{{ block.super }}
+{% endblock %}

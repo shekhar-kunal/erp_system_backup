@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Django
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# Backups / data dumps
+*.json
+!*/fixtures/*.json
+
+# Secrets / local config
+.env
+*.env
+local_settings.py
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code session files
+.claude/projects/

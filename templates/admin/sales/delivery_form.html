@@ -1,0 +1,91 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .delivery-form {
+      max-width: 800px;
+      margin: 20px 0;
+    }
+    .order-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-left: 4px solid #79aec8;
+      margin-bottom: 20px;
+    }
+    .line-item {
+      background: #fff;
+      padding: 15px;
+      margin: 10px 0;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    .line-item label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .line-item .help {
+      color: #666;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+    .submit-row {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-top: 1px solid #eee;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  
+  <div class="order-info">
+    <h3>Order Information</h3>
+    <table class="table">
+      <tr>
+        <th>Order Number:</th>
+        <td>{{ order.order_number }}</td>
+      </tr>
+      <tr>
+        <th>Customer:</th>
+        <td>{{ order.customer.full_name }}</td>
+      </tr>
+      <tr>
+        <th>Status:</th>
+        <td>{{ order.get_status_display }}</td>
+      </tr>
+      <tr>
+        <th>Warehouse:</th>
+        <td>{{ order.warehouse.name }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <form method="post" class="delivery-form">
+    {% csrf_token %}
+    
+    {% for field in form %}
+      <div class="line-item">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}
+          <div class="help">{{ field.help_text }}</div>
+        {% endif %}
+        {% if field.errors %}
+          <div style="color: red;">{{ field.errors }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <div class="submit-row">
+      <input type="submit" value="Process Delivery" class="default">
+      <a href="{% url 'admin:sales_salesorder_change' order.id %}" class="button cancel-link">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

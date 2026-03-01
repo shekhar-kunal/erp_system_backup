@@ -1,0 +1,100 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Batch Details: {{ batch.batch_number }}</h1>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <!-- Product Info -->
+        <div style="background: white; padding: 20px; border-radius: 4px;">
+            <h2>Product Information</h2>
+            <table>
+                <tr><th>Product:</th><td>{{ batch.stock.product.name }}</td></tr>
+                <tr><th>SKU:</th><td>{{ batch.stock.product.sku }}</td></tr>
+                <tr><th>Warehouse:</th><td>{{ batch.stock.warehouse.name }}</td></tr>
+                <tr><th>Section:</th><td>{{ batch.stock.section.full_location|default:"Main" }}</td></tr>
+            </table>
+        </div>
+        
+        <!-- Batch Info -->
+        <div style="background: white; padding: 20px; border-radius: 4px;">
+            <h2>Batch Information</h2>
+            <table>
+                <tr><th>Batch Number:</th><td>{{ batch.batch_number }}</td></tr>
+                <tr><th>Quantity:</th><td>{{ batch.quantity }} {{ batch.unit.code }}</td></tr>
+                <tr><th>Base Quantity:</th><td>{{ batch.total_base_quantity }}</td></tr>
+                <tr><th>Status:</th>
+                    <td>
+                        {% if batch.quality_status == 'approved' %}
+                            <span style="color: green;">✓ Approved</span>
+                        {% elif batch.quality_status == 'rejected' %}
+                            <span style="color: red;">✗ Rejected</span>
+                        {% elif batch.quality_status == 'quarantine' %}
+                            <span style="color: orange;">⚠ Quarantine</span>
+                        {% else %}
+                            <span style="color: gray;">⏳ Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Dates -->
+        <div style="background: white; padding: 20px; border-radius: 4px;">
+            <h2>Dates</h2>
+            <table>
+                <tr><th>Manufacturing:</th><td>{{ batch.manufacturing_date|date:"Y-m-d"|default:"-" }}</td></tr>
+                <tr><th>Expiry:</th>
+                    <td>
+                        {{ batch.expiry_date|date:"Y-m-d" }}
+                        {% if batch.is_expired %}
+                            <span style="color: red;">(Expired)</span>
+                        {% elif batch.days_to_expiry < 30 %}
+                            <span style="color: orange;">({{ batch.days_to_expiry }} days left)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr><th>Received:</th><td>{{ batch.received_date|date:"Y-m-d" }}</td></tr>
+            </table>
+        </div>
+        
+        <!-- Supplier -->
+        <div style="background: white; padding: 20px; border-radius: 4px;">
+            <h2>Supplier Information</h2>
+            <table>
+                <tr><th>Supplier:</th><td>{{ batch.supplier|default:"-" }}</td></tr>
+                <tr><th>Supplier Batch:</th><td>{{ batch.supplier_batch|default:"-" }}</td></tr>
+                <tr><th>Notes:</th><td>{{ batch.notes|default:"-"|linebreaks }}</td></tr>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Movement History -->
+    <div style="background: white; padding: 20px; border-radius: 4px; margin-top: 20px;">
+        <h2>Movement History</h2>
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Reference</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movement in batch.stock.stock_movements.all|slice:":20" %}
+                <tr>
+                    <td>{{ movement.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ movement.get_movement_type_display }}</td>
+                    <td>{{ movement.quantity }}</td>
+                    <td>{{ movement.reference|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">No movements recorded</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 40px auto; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+    <h1 style="color: #417690; text-align: center;">🚀 Welcome to Your ERP System</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 30px;">Let's configure your global settings before you start</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #417690;">1. Company Information</h2>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Company Name</label>
+                <input type="text" name="company_name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #417690;">2. Currency & Number Format</h2>
+            <p style="color: #856404; background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                ⚠️ These settings cannot be changed after you add your first product!
+            </p>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Decimal Precision</label>
+                <select name="price_decimals" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="2">2 Decimals - Retail (1,299.99)</option>
+                    <option value="4" selected>4 Decimals - Wholesale (1,299.9875)</option>
+                    <option value="6">6 Decimals - High Precision (1,299.987654)</option>
+                </select>
+                <small style="color: #999;">Recommended: 4 decimals for accurate calculations</small>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Default Currency</label>
+                <select name="currency" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="USD" selected>USD ($) - US Dollar</option>
+                    <option value="EUR">EUR (€) - Euro</option>
+                    <option value="GBP">GBP (£) - British Pound</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Currency Position</label>
+                <select name="currency_position" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="before" selected>$10.99</option>
+                    <option value="after">10.99€</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #417690;">3. Product Settings</h2>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">SKU Generation Pattern</label>
+                <select name="sku_pattern" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="{CATEGORY}-{SEQUENCE}">CAT-0001 (by category)</option>
+                    <option value="{BRAND}-{SEQUENCE}">BRAND-0001 (by brand)</option>
+                    <option value="{CATEGORY}-{BRAND}-{SEQUENCE}">CAT-BRAND-0001 (combined)</option>
+                    <option value="SKU-{SEQUENCE}">SKU-0001 (simple)</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">SKU Length</label>
+                <input type="number" name="sku_length" value="8" min="5" max="20" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #417690;">4. Pricing Configuration</h2>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Pricing Model</label>
+                <select name="pricing_model" id="pricing_model" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="single" selected>Single Price - All customers same price</option>
+                    <option value="multi">Multi-Tier - Different prices for Retail/Wholesale/Distributor</option>
+                </select>
+            </div>
+            
+            <div id="tier_options" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                <h3 style="margin-top: 0; color: #417690;">Price Tier Names</h3>
+                <div style="margin-bottom: 10px;">
+                    <label>Retail Tier Name:</label>
+                    <input type="text" name="retail_name" value="Retail Price" style="width: 100%; padding: 8px;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>Wholesale Tier Name:</label>
+                    <input type="text" name="wholesale_name" value="Wholesale Price" style="width: 100%; padding: 8px;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>Distributor Tier Name:</label>
+                    <input type="text" name="distributor_name" value="Distributor Price" style="width: 100%; padding: 8px;">
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #417690;">5. Module Activation</h2>
+            <p>Enable the modules you need for your business:</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <label><input type="checkbox" checked disabled> ✅ Products (Required)</label>
+                <label><input type="checkbox" checked> Inventory</label>
+                <label><input type="checkbox" checked> Sales & Customers</label>
+                <label><input type="checkbox" checked> Purchasing</label>
+                <label><input type="checkbox" checked> Accounting</label>
+                <label><input type="checkbox"> Manufacturing</label>
+                <label><input type="checkbox"> HR</label>
+                <label><input type="checkbox"> Projects</label>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button type="submit" style="background: #28a745; color: white; padding: 12px 30px; border: none; border-radius: 4px; font-size: 1.1em; cursor: pointer;">
+                🚀 Complete ERP Setup
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('pricing_model').addEventListener('change', function() {
+    document.getElementById('tier_options').style.display = 
+        this.value === 'multi' ? 'block' : 'none';
+});
+</script>
+{% endblock %}

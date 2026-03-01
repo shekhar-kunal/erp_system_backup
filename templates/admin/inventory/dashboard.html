@@ -1,0 +1,251 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .dashboard-card {
+        background: white;
+        border-radius: 4px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .metric-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #447e9b;
+        line-height: 1.2;
+    }
+    .metric-label {
+        color: #666;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .warning { color: #e05c5c !important; }
+    .success { color: #5cb85c !important; }
+    .info { color: #5bc0de !important; }
+    
+    .progress-container {
+        margin: 15px 0;
+    }
+    .progress-bar {
+        background: #f0f0f0;
+        height: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+    .progress-fill {
+        height: 100%;
+        background: #447e9b;
+        transition: width 0.3s ease;
+    }
+    .progress-fill.warning { background: #e05c5c; }
+    .progress-fill.success { background: #5cb85c; }
+    .progress-label {
+        position: absolute;
+        left: 10px;
+        top: 0;
+        color: white;
+        font-size: 0.8em;
+        line-height: 20px;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    }
+    
+    .recent-movements {
+        background: white;
+        border-radius: 4px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .movement-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .movement-table th {
+        text-align: left;
+        padding: 10px;
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .movement-table td {
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .movement-in {
+        color: #5cb85c;
+        font-weight: bold;
+    }
+    .movement-out {
+        color: #e05c5c;
+        font-weight: bold;
+    }
+    
+    .quick-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .quick-action-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #495057;
+        transition: all 0.2s;
+    }
+    .quick-action-btn:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>📊 Inventory Dashboard</h1>
+    
+    <!-- Key Metrics -->
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="metric-value">${{ total_stock_value|floatformat:0 }}</div>
+            <div class="metric-label">Total Stock Value</div>
+        </div>
+        <div class="dashboard-card">
+            <div class="metric-value">{{ total_products_in_stock }}</div>
+            <div class="metric-label">Products in Stock</div>
+        </div>
+        <div class="dashboard-card">
+            <div class="metric-value {% if low_stock_items > 0 %}warning{% endif %}">
+                {{ low_stock_items }}
+            </div>
+            <div class="metric-label">Low Stock Items</div>
+        </div>
+        <div class="dashboard-card">
+            <div class="metric-value {% if out_of_stock > 0 %}warning{% endif %}">
+                {{ out_of_stock }}
+            </div>
+            <div class="metric-label">Out of Stock</div>
+        </div>
+        <div class="dashboard-card">
+            <div class="metric-value">{{ total_warehouses }}</div>
+            <div class="metric-label">Total Warehouses</div>
+        </div>
+        <div class="dashboard-card">
+            <div class="metric-value success">{{ active_warehouses }}</div>
+            <div class="metric-label">Active Warehouses</div>
+        </div>
+    </div>
+
+    <!-- Warehouse Utilization -->
+    <div class="recent-movements" style="margin-bottom: 20px;">
+        <h2>🏭 Warehouse Utilization</h2>
+        <div class="progress-container">
+            {% for wh in warehouse_utilization %}
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <strong>{{ wh.name }}</strong>
+                    <span>{{ wh.utilization|floatformat:1 }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill {% if wh.is_over %}warning{% endif %}" 
+                         style="width: {{ wh.utilization }}%;"></div>
+                    <span class="progress-label">
+                        {% if wh.is_over %}⚠️ Over Threshold{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <p>No warehouse data available.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Movements -->
+    <div class="recent-movements" style="margin-bottom: 20px;">
+        <h2>📦 Recent Stock Movements</h2>
+        <table class="movement-table">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Warehouse</th>
+                    <th>Reference</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movement in recent_movements %}
+                <tr>
+                    <td>{{ movement.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        <strong>{{ movement.product.name }}</strong><br>
+                        <small>{{ movement.product.sku }}</small>
+                    </td>
+                    <td>
+                        {% if movement.movement_type == 'IN' %}
+                            <span class="movement-in">⬆️ IN</span>
+                        {% elif movement.movement_type == 'OUT' %}
+                            <span class="movement-out">⬇️ OUT</span>
+                        {% else %}
+                            <span>{{ movement.get_movement_type_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ movement.quantity }}
+                        {% if movement.unit_quantity != 1 %}
+                            <br><small>({{ movement.base_quantity }} base)</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ movement.warehouse.name }}</td>
+                    <td>{{ movement.reference|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">No recent movements</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="recent-movements">
+        <h2>⚡ Quick Actions</h2>
+        <div class="quick-actions">
+            <a href="{% url 'admin:inventory_stock_changelist' %}" class="quick-action-btn">
+                📋 View All Stock
+            </a>
+            <a href="{% url 'admin:inventory_stockmovement_changelist' %}" class="quick-action-btn">
+                📊 View All Movements
+            </a>
+            <a href="{% url 'admin:inventory-stock-export' %}" class="quick-action-btn">
+                📥 Export Stock CSV
+            </a>
+            <a href="{% url 'admin:inventory-reports' %}?type=valuation" class="quick-action-btn">
+                💰 Valuation Report
+            </a>
+            <a href="{% url 'admin:inventory-reports' %}?type=movements" class="quick-action-btn">
+                📈 Movement Report
+            </a>
+            <a href="{% url 'admin:inventory_stock_add' %}" class="quick-action-btn">
+                ➕ Add New Stock
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

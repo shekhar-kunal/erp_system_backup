@@ -1,0 +1,137 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Global Overview — ERP{% endblock %}
+{% block page_title %}🌐 Global Overview{% endblock %}
+
+{% block content %}
+
+<!-- KPI Row 1: Business Counts -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Products</h3>
+        <div class="stat-number">{{ total_products }}</div>
+        <div class="stat-sub">Total SKUs</div>
+    </div>
+    <div class="stat-card info">
+        <h3>Customers</h3>
+        <div class="stat-number">{{ total_customers }}</div>
+        <div class="stat-sub">Registered</div>
+    </div>
+    <div class="stat-card info">
+        <h3>Vendors</h3>
+        <div class="stat-number">{{ total_vendors }}</div>
+        <div class="stat-sub">Active Suppliers</div>
+    </div>
+    <div class="stat-card">
+        <h3>Warehouses</h3>
+        <div class="stat-number">{{ total_warehouses }}</div>
+        <div class="stat-sub">Locations</div>
+    </div>
+</div>
+
+<!-- KPI Row 2: Financial -->
+<div class="stats-grid">
+    <div class="stat-card success">
+        <h3>Revenue This Month</h3>
+        <div class="stat-number">${{ month_sales|floatformat:0 }}</div>
+        <div class="stat-sub">Confirmed + Completed orders</div>
+    </div>
+    <div class="stat-card warning">
+        <h3>Expenses This Month</h3>
+        <div class="stat-number">${{ month_purchases|floatformat:0 }}</div>
+        <div class="stat-sub">Confirmed + Done POs</div>
+    </div>
+    <div class="stat-card success">
+        <h3>Gross Profit</h3>
+        <div class="stat-number">${{ gross_profit|floatformat:0 }}</div>
+        <div class="stat-sub">Margin: {{ profit_margin }}%</div>
+    </div>
+    <div class="stat-card info">
+        <h3>A/R Outstanding</h3>
+        <div class="stat-number">${{ invoice_ar|floatformat:0 }}</div>
+        <div class="stat-sub">{{ unpaid_invoices }} open invoices</div>
+    </div>
+</div>
+
+<!-- Alert Strip -->
+{% if low_stock or out_of_stock or overdue_invoices or pending_sales %}
+<div class="alert-strip">
+    {% if out_of_stock %}
+    <span class="alert-pill red">🚫 {{ out_of_stock }} out of stock</span>
+    {% endif %}
+    {% if low_stock %}
+    <span class="alert-pill orange">⚠️ {{ low_stock }} low stock</span>
+    {% endif %}
+    {% if overdue_invoices %}
+    <span class="alert-pill red">🧾 {{ overdue_invoices }} overdue invoices</span>
+    {% endif %}
+    {% if pending_sales %}
+    <span class="alert-pill blue">📦 {{ pending_sales }} pending sales orders</span>
+    {% endif %}
+    {% if pending_purchases %}
+    <span class="alert-pill orange">🛒 {{ pending_purchases }} pending purchase orders</span>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Charts -->
+<h2 class="section-title">📈 30-Day Revenue vs Expenses</h2>
+<div class="charts-grid">
+    <div class="chart-card" style="grid-column: span 2;">
+        <h3>Revenue &amp; Cost Trend (Last 30 Days)</h3>
+        <div class="chart-container" style="height: 280px;">
+            <canvas id="revenueChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>Sales Orders by Status</h3>
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: {{ chart_labels }},
+        datasets: [
+            {
+                label: 'Revenue ($)',
+                data: {{ chart_revenue }},
+                borderColor: '#4caf50',
+                backgroundColor: 'rgba(76,175,80,0.08)',
+                tension: 0.4, fill: true, pointRadius: 2,
+            },
+            {
+                label: 'Expenses ($)',
+                data: {{ chart_cost }},
+                borderColor: '#ff9800',
+                backgroundColor: 'rgba(255,152,0,0.08)',
+                tension: 0.4, fill: true, pointRadius: 2,
+            }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: {
+            y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } }
+        }
+    }
+});
+
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ status_labels }},
+        datasets: [{ data: {{ status_counts }}, backgroundColor: ['#4caf50','#ff9800','#f44336','#2196f3','#9c27b0'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Finance Dashboard — ERP{% endblock %}
+{% block page_title %}📑 Finance Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Invoice KPIs -->
+<h2 class="section-title">🧾 Accounts Receivable</h2>
+<div class="stats-grid">
+    <div class="stat-card success">
+        <h3>Total Invoiced</h3>
+        <div class="stat-number">${{ total_invoiced|floatformat:0 }}</div>
+        <div class="stat-sub">Sent + Active</div>
+    </div>
+    <div class="stat-card success">
+        <h3>Received</h3>
+        <div class="stat-number">${{ total_received|floatformat:0 }}</div>
+        <div class="stat-sub">Amount collected</div>
+    </div>
+    <div class="stat-card warning">
+        <h3>AR Balance</h3>
+        <div class="stat-number">${{ ar_balance|floatformat:0 }}</div>
+        <div class="stat-sub">Outstanding receivable</div>
+    </div>
+    <div class="stat-card">
+        <h3>Invoice Status</h3>
+        <div class="stat-number" style="font-size:15px; margin-top:4px;">
+            <span class="badge badge-secondary">Draft {{ invoices_draft }}</span>
+            <span class="badge badge-info">Sent {{ invoices_sent }}</span>
+            <span class="badge badge-warning">Partial {{ invoices_partial }}</span>
+            <span class="badge badge-success">Paid {{ invoices_paid }}</span>
+            <span class="badge badge-danger">Overdue {{ invoices_overdue }}</span>
+        </div>
+        <div class="stat-sub" style="margin-top:6px;">Invoice breakdown</div>
+    </div>
+</div>
+
+<!-- Bill KPIs -->
+<h2 class="section-title">📤 Accounts Payable</h2>
+<div class="stats-grid">
+    <div class="stat-card warning">
+        <h3>Total Billed</h3>
+        <div class="stat-number">${{ total_billed|floatformat:0 }}</div>
+        <div class="stat-sub">Received bills</div>
+    </div>
+    <div class="stat-card success">
+        <h3>Paid Out</h3>
+        <div class="stat-number">${{ total_paid_out|floatformat:0 }}</div>
+        <div class="stat-sub">Payments made</div>
+    </div>
+    <div class="stat-card danger">
+        <h3>AP Balance</h3>
+        <div class="stat-number">${{ ap_balance|floatformat:0 }}</div>
+        <div class="stat-sub">Outstanding payable</div>
+    </div>
+    <div class="stat-card">
+        <h3>Bill Status</h3>
+        <div class="stat-number" style="font-size:15px; margin-top:4px;">
+            <span class="badge badge-secondary">Draft {{ bills_draft }}</span>
+            <span class="badge badge-info">Rcvd {{ bills_received }}</span>
+            <span class="badge badge-warning">Partial {{ bills_partial }}</span>
+            <span class="badge badge-success">Paid {{ bills_paid }}</span>
+            <span class="badge badge-danger">Overdue {{ bills_overdue }}</span>
+        </div>
+        <div class="stat-sub" style="margin-top:6px;">Bill breakdown</div>
+    </div>
+</div>
+
+<!-- Charts -->
+<h2 class="section-title">📈 30-Day Invoice vs Bill Trend</h2>
+<div class="charts-grid">
+    <div class="chart-card" style="grid-column: span 2;">
+        <h3>Invoices Issued vs Bills Received (Last 30 Days)</h3>
+        <div class="chart-container" style="height:280px;">
+            <canvas id="finChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Tables -->
+<h2 class="section-title">🔔 Action Required</h2>
+<div class="tables-grid">
+    <div class="table-card">
+        <h3>Overdue Invoices</h3>
+        <table>
+            <thead><tr><th>Invoice</th><th>Customer</th><th>Due</th><th>Balance</th></tr></thead>
+            <tbody>
+                {% for inv in overdue_list %}
+                <tr>
+                    <td>{{ inv.invoice_number }}</td>
+                    <td>{{ inv.customer.full_name|default:"—" }}</td>
+                    <td style="color:#c62828;">{{ inv.due_date|date:"M d, Y" }}</td>
+                    <td class="amount neg">${{ inv.net_amount|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="no-data">No overdue invoices</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-card">
+        <h3>Upcoming Bills Due</h3>
+        <table>
+            <thead><tr><th>Bill</th><th>Vendor</th><th>Due</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for bill in upcoming_bills %}
+                <tr>
+                    <td>{{ bill.bill_number }}</td>
+                    <td>{{ bill.vendor.name|default:"—" }}</td>
+                    <td>{{ bill.due_date|date:"M d, Y" }}</td>
+                    <td class="amount">${{ bill.total_amount|floatformat:0 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="no-data">No upcoming bills</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+const finCtx = document.getElementById('finChart').getContext('2d');
+new Chart(finCtx, {
+    type: 'line',
+    data: {
+        labels: {{ chart_labels }},
+        datasets: [
+            {
+                label: 'Invoices ($)',
+                data: {{ chart_inv }},
+                borderColor: '#4caf50',
+                backgroundColor: 'rgba(76,175,80,0.08)',
+                tension: 0.4, fill: true, pointRadius: 2,
+            },
+            {
+                label: 'Bills ($)',
+                data: {{ chart_bill }},
+                borderColor: '#f44336',
+                backgroundColor: 'rgba(244,67,54,0.08)',
+                tension: 0.4, fill: true, pointRadius: 2,
+            }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+    }
+});
+{% endblock %}

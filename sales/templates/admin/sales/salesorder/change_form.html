@@ -1,0 +1,17 @@
+{% extends "admin/change_form.html" %}
+
+{% block object-tools %}
+    {{ block.super }}
+    
+    {% if show_confirm_button %}
+        <a class="button" href="{% url 'admin:salesorder-confirm' object_id %}" style="margin-right: 10px;">
+            Confirm Order
+        </a>
+    {% endif %}
+
+    {% if show_cancel_button %}
+        <a class="button" href="{% url 'admin:salesorder-cancel' object_id %}" style="margin-right: 10px;">
+            Cancel Order
+        </a>
+    {% endif %}
+{% endblock %}

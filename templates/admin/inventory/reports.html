@@ -1,0 +1,300 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .report-header {
+        background: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .report-filters {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    .report-table {
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .report-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .report-table th {
+        background: #417690;
+        color: white;
+        padding: 12px;
+        text-align: left;
+    }
+    .report-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .report-table tr:hover {
+        background: #f8f9fa;
+    }
+    .report-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+    }
+    .btn {
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary {
+        background: #417690;
+        color: white;
+    }
+    .btn-secondary {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+    .summary-card {
+        background: white;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    .summary-item {
+        text-align: center;
+    }
+    .summary-value {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #417690;
+    }
+    .summary-label {
+        color: #666;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="report-header">
+        <h1>📈 {{ title }}</h1>
+        <p>Generated on: {{ report_date|date:"F j, Y H:i" }}</p>
+    </div>
+
+    <!-- Report Filters -->
+    <div class="report-filters">
+        <form method="get">
+            <label for="type">Report Type:</label>
+            <select name="type" id="type" onchange="this.form.submit()">
+                <option value="stock" {% if report_type == 'stock' %}selected{% endif %}>Stock Report</option>
+                <option value="movements" {% if report_type == 'movements' %}selected{% endif %}>Movement Report</option>
+                <option value="valuation" {% if report_type == 'valuation' %}selected{% endif %}>Valuation Report</option>
+            </select>
+            
+            {% if report_type == 'movements' %}
+            <select name="period" style="margin-left: 10px;">
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+            </select>
+            {% endif %}
+            
+            <button type="submit" class="btn btn-primary" style="margin-left: 10px;">Generate Report</button>
+        </form>
+    </div>
+
+    <!-- Report Content -->
+    {% if report_type == 'stock' %}
+        <div class="summary-card">
+            <h2>Stock Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value">{{ data|length }}</div>
+                    <div class="summary-label">Total Items</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">{{ data|dictsortreversed:"quantity"|first|default:"0" }}</div>
+                    <div class="summary-label">Max Quantity</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">{{ data|dictsort:"quantity"|first|default:"0" }}</div>
+                    <div class="summary-label">Min Quantity</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="report-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>SKU</th>
+                        <th>Warehouse</th>
+                        <th>Section</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>{{ item.product.sku }}</td>
+                        <td>{{ item.warehouse.name }}</td>
+                        <td>{{ item.section.full_location|default:"-" }}</td>
+                        <td>
+                            {% if item.unit %}
+                                {{ item.total_units|floatformat:2 }} {{ item.unit.code }}
+                                <br><small>({{ item.quantity }} base)</small>
+                            {% else %}
+                                {{ item.quantity }}
+                            {% endif %}
+                        </td>
+                        <td>{{ item.unit.code|default:"base" }}</td>
+                        <td>
+                            {% if item.needs_reorder %}
+                                <span style="color: orange;">⚠️ Low Stock</span>
+                            {% elif item.quantity <= 0 %}
+                                <span style="color: red;">❌ Out of Stock</span>
+                            {% else %}
+                                <span style="color: green;">✓ OK</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center;">No stock data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% elif report_type == 'movements' %}
+        <div class="summary-card">
+            <h2>Movement Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value">{{ data|length }}</div>
+                    <div class="summary-label">Total Movements</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">{{ data|dictsortreversed:"quantity"|first|default:"0" }}</div>
+                    <div class="summary-label">Largest Movement</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="report-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Product</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Warehouse</th>
+                        <th>Source</th>
+                        <th>Reference</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in data %}
+                    <tr>
+                        <td>{{ movement.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            {{ movement.product.name }}<br>
+                            <small>{{ movement.product.sku }}</small>
+                        </td>
+                        <td>
+                            {% if movement.movement_type == 'IN' %}
+                                <span style="color: green;">⬆️ IN</span>
+                            {% else %}
+                                <span style="color: red;">⬇️ OUT</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ movement.quantity }}
+                            {% if movement.unit_quantity != 1 %}
+                                <br><small>({{ movement.base_quantity }} base)</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ movement.warehouse.name }}</td>
+                        <td>{{ movement.get_source_display }}</td>
+                        <td>{{ movement.reference|default:"-" }}</td>
+                        <td>{{ movement.created_by.username|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" style="text-align: center;">No movement data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% elif report_type == 'valuation' %}
+        <div class="summary-card">
+            <h2>Valuation Summary</h2>
+            <div class="summary-grid">
+                {% for item in data %}
+                <div class="summary-item">
+                    <div class="summary-value">${{ item.total_value|floatformat:0 }}</div>
+                    <div class="summary-label">{{ item.warehouse__name }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="report-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Warehouse</th>
+                        <th>Total Items</th>
+                        <th>Total Value</th>
+                        <th>Average Value/Item</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                    <tr>
+                        <td><strong>{{ item.warehouse__name }}</strong></td>
+                        <td>{{ item.total_items }}</td>
+                        <td>${{ item.total_value|floatformat:2 }}</td>
+                        <td>${{ item.total_value|floatformat:2|default:0 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center;">No valuation data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    <!-- Report Actions -->
+    <div class="report-actions">
+        <a href="#" onclick="window.print()" class="btn btn-secondary">🖨️ Print Report</a>
+        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-secondary">📥 Export CSV</a>
+        <a href="{% url 'admin:inventory-dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block object-tools %}
+    {{ block.super }}
+    {% if show_confirm %}
+        <a class="button" href="{{ confirm_url }}">Confirm</a>
+    {% endif %}
+    {% if show_cancel %}
+        <a class="button" href="{{ cancel_url }}">Cancel</a>
+    {% endif %}
+{% endblock %}

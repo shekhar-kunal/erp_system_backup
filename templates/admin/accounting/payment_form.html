@@ -1,0 +1,119 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .payment-form {
+      max-width: 600px;
+      margin: 20px 0;
+    }
+    .document-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-left: 4px solid #79aec8;
+      margin-bottom: 20px;
+    }
+    .form-row {
+      padding: 10px;
+      margin: 5px 0;
+    }
+    .form-row label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .form-row input, .form-row select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .submit-row {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-top: 1px solid #eee;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  
+  <div class="document-info">
+    {% if invoice %}
+      <h3>Invoice Details</h3>
+      <table class="table">
+        <tr>
+          <th>Invoice Number:</th>
+          <td>{{ invoice.invoice_number }}</td>
+        </tr>
+        <tr>
+          <th>Customer:</th>
+          <td>{{ invoice.customer.full_name }}</td>
+        </tr>
+        <tr>
+          <th>Total Amount:</th>
+          <td>{{ invoice.net_amount|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <th>Amount Paid:</th>
+          <td>{{ invoice.amount_paid|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <th>Balance Due:</th>
+          <td><strong>{{ invoice.balance_due|floatformat:2 }}</strong></td>
+        </tr>
+      </table>
+    {% elif bill %}
+      <h3>Bill Details</h3>
+      <table class="table">
+        <tr>
+          <th>Bill Number:</th>
+          <td>{{ bill.bill_number }}</td>
+        </tr>
+        <tr>
+          <th>Vendor:</th>
+          <td>{{ bill.vendor.name }}</td>
+        </tr>
+        <tr>
+          <th>Total Amount:</th>
+          <td>{{ bill.net_amount|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <th>Amount Paid:</th>
+          <td>{{ bill.amount_paid|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <th>Balance Due:</th>
+          <td><strong>{{ bill.balance_due|floatformat:2 }}</strong></td>
+        </tr>
+      </table>
+    {% endif %}
+  </div>
+
+  <form method="post" class="payment-form">
+    {% csrf_token %}
+    
+    {% for field in form %}
+      <div class="form-row">
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}
+          <div style="color: #666; font-size: 0.9em;">{{ field.help_text }}</div>
+        {% endif %}
+        {% if field.errors %}
+          <div style="color: red;">{{ field.errors }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <div class="submit-row">
+      <input type="submit" value="Process Payment" class="default">
+      <a href="{% if invoice %}{% url 'admin:accounting_invoice_change' invoice.id %}{% else %}{% url 'admin:accounting_bill_change' bill.id %}{% endif %}" class="button cancel-link">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

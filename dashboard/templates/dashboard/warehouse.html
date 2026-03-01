@@ -1,0 +1,141 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Warehouse Dashboard — ERP{% endblock %}
+{% block page_title %}🏭 Warehouse Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card success">
+        <h3>Total Inventory Value</h3>
+        <div class="stat-number">${{ total_value|floatformat:0 }}</div>
+        <div class="stat-sub">Across all warehouses</div>
+    </div>
+    <div class="stat-card">
+        <h3>Stock Entries</h3>
+        <div class="stat-number">{{ total_items }}</div>
+        <div class="stat-sub">Product-warehouse pairs</div>
+    </div>
+    <div class="stat-card warning">
+        <h3>Low Stock</h3>
+        <div class="stat-number">{{ low_stock_total }}</div>
+        <div class="stat-sub">Below reorder level</div>
+    </div>
+</div>
+
+<h2 class="section-title">📊 Warehouse Overview</h2>
+<div class="charts-grid">
+    <div class="chart-card">
+        <h3>7-Day Movement Trend</h3>
+        <div class="chart-container">
+            <canvas id="movChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>Inventory Value per Warehouse</h3>
+        <div class="chart-container">
+            <canvas id="whChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<h2 class="section-title">🏭 Warehouse Detail</h2>
+<div class="table-card" style="margin-bottom:20px;">
+    <h3>Per-Warehouse Summary</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Warehouse</th>
+                <th>SKUs</th>
+                <th>Total Qty</th>
+                <th>Low Stock</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for w in warehouses %}
+            <tr>
+                <td><strong>{{ w.name }}</strong></td>
+                <td>{{ w.wh_items|default:0 }}</td>
+                <td>{{ w.wh_qty|floatformat:0|default:0 }}</td>
+                <td>
+                    {% if w.low_count %}
+                        <span class="badge badge-warning">{{ w.low_count }}</span>
+                    {% else %}
+                        <span class="badge badge-success">OK</span>
+                    {% endif %}
+                </td>
+                <td class="amount">${{ w.wh_value|floatformat:0|default:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="no-data">No warehouses configured</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h2 class="section-title">🔄 Recent Stock Movements</h2>
+<div class="table-card">
+    <table>
+        <thead><tr><th>Time</th><th>Product</th><th>Warehouse</th><th>Type</th><th>Qty</th></tr></thead>
+        <tbody>
+            {% for m in recent_movements %}
+            <tr>
+                <td style="color:#888; white-space:nowrap;">{{ m.created_at|date:"M d H:i" }}</td>
+                <td>{{ m.product.name }}</td>
+                <td>{{ m.warehouse.name }}</td>
+                <td>
+                    {% if m.movement_type == 'IN' %}
+                        <span class="badge badge-success">IN</span>
+                    {% else %}
+                        <span class="badge badge-danger">OUT</span>
+                    {% endif %}
+                </td>
+                <td>{{ m.quantity }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="no-data">No recent stock movements</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+const movCtx = document.getElementById('movChart').getContext('2d');
+new Chart(movCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels }},
+        datasets: [
+            { label: 'Stock IN', data: {{ chart_in }}, backgroundColor: 'rgba(76,175,80,0.7)', borderRadius: 3 },
+            { label: 'Stock OUT', data: {{ chart_out }}, backgroundColor: 'rgba(244,67,54,0.7)', borderRadius: 3 },
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { y: { beginAtZero: true } }
+    }
+});
+
+const whCtx = document.getElementById('whChart').getContext('2d');
+new Chart(whCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ wh_labels }},
+        datasets: [{
+            label: 'Value ($)',
+            data: {{ wh_values }},
+            backgroundColor: ['#1a237e','#3949ab','#5c6bc0','#7986cb','#9fa8da'],
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } }
+    }
+});
+{% endblock %}

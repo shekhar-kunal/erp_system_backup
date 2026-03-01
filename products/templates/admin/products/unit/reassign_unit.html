@@ -1,0 +1,90 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Reassign and delete units{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:products_unit_changelist' %}">Units</a>
+  &rsaquo; Reassign and delete
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Reassign and delete unit(s)</h1>
+
+<p>
+  The unit(s) below are <strong>referenced by other records</strong> (products, stock, purchase
+  orders, etc.) and cannot be deleted directly. Choose a replacement unit — all references will
+  be transferred to it — and then the selected unit(s) will be permanently deleted.
+</p>
+
+{% if error %}
+<p class="errornote">{{ error }}</p>
+{% endif %}
+
+<h2>Units to be deleted</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Code</th>
+      <th>Type</th>
+      <th>Used as base unit (products)</th>
+      <th>Used as packing unit</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for unit in units_to_delete %}
+    <tr>
+      <td><strong>{{ unit.name }}</strong></td>
+      <td>{{ unit.code }}</td>
+      <td>{{ unit.get_unit_type_display }}</td>
+      <td>{{ unit.base_count }}</td>
+      <td>{{ unit.packing_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Select replacement unit</h2>
+
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="unit_ids" value="{{ unit_ids }}">
+
+  <p>
+    <label for="replacement_unit"><strong>Transfer all references to:</strong></label><br>
+    <select name="replacement_unit" id="replacement_unit" required style="min-width:300px; margin-top:6px;">
+      <option value="">---------</option>
+      {% regroup available_units by get_unit_type_display as type_groups %}
+      {% for group in type_groups %}
+        <optgroup label="{{ group.grouper }}">
+          {% for unit in group.list %}
+            <option value="{{ unit.pk }}">{{ unit.name }} ({{ unit.code }})</option>
+          {% endfor %}
+        </optgroup>
+      {% endfor %}
+    </select>
+  </p>
+
+  <p class="help">
+    Packing unit rows that reference the deleted unit(s) will be removed automatically
+    (they are linked via a cascade-delete relationship). All other references
+    (products, stock entries, purchase order lines, etc.) will be reassigned to the
+    unit you choose above.
+  </p>
+
+  <div>
+    <input type="submit"
+           value="Reassign and permanently delete"
+           class="button"
+           style="background:#ba2121; color:#fff; border-color:#9a1a1a;"
+           onclick="return confirm('This will permanently delete the selected unit(s). Are you sure?');">
+    &nbsp;
+    <a href="{% url 'admin:products_unit_changelist' %}" class="button cancel-link">Cancel</a>
+  </div>
+</form>
+{% endblock %}

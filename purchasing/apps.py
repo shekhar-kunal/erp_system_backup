@@ -2,4 +2,9 @@ from django.apps import AppConfig
 
 
 class PurchasingConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
     name = 'purchasing'
+    verbose_name = 'Purchasing Management'
+    
+    def ready(self):
+        import purchasing.signals  # noqa

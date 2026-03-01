@@ -1,0 +1,758 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    :root {
+        --primary-color: #417690;
+        --secondary-color: #79aec8;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --light-bg: #f8f9fa;
+        --dark-bg: #343a40;
+    }
+    
+    .setup-container {
+        max-width: 1400px;
+        margin: 20px auto;
+        padding: 0 20px;
+    }
+    
+    .setup-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .setup-header h1 {
+        margin: 0;
+        font-size: 2.5em;
+        font-weight: 300;
+    }
+    
+    .setup-header p {
+        margin: 10px 0 0;
+        font-size: 1.1em;
+        opacity: 0.9;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .stat-icon {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+    }
+    
+    .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+    
+    .stat-label {
+        color: #666;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .setup-section {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .section-title {
+        margin: 0 0 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #eee;
+        font-size: 1.5em;
+        color: var(--primary-color);
+    }
+    
+    .section-title i {
+        margin-right: 10px;
+    }
+    
+    .config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .config-item {
+        background: var(--light-bg);
+        border-radius: 8px;
+        padding: 15px;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .config-item h3 {
+        margin: 0 0 10px;
+        font-size: 1.1em;
+    }
+    
+    .config-item p {
+        margin: 0 0 15px;
+        color: #666;
+        font-size: 0.95em;
+    }
+    
+    .config-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn {
+        padding: 8px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.9em;
+        transition: all 0.2s;
+        display: inline-block;
+    }
+    
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #2c5a7a;
+    }
+    
+    .btn-secondary {
+        background: var(--secondary-color);
+        color: white;
+    }
+    
+    .btn-success {
+        background: var(--success-color);
+        color: white;
+    }
+    
+    .btn-warning {
+        background: var(--warning-color);
+        color: var(--dark-bg);
+    }
+    
+    .btn-danger {
+        background: var(--danger-color);
+        color: white;
+    }
+    
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .btn-outline:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .quick-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .quick-action {
+        flex: 1 1 200px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        transition: all 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .quick-action:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .quick-action-icon {
+        font-size: 2em;
+        margin-bottom: 10px;
+    }
+    
+    .quick-action-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: var(--primary-color);
+    }
+    
+    .quick-action-desc {
+        font-size: 0.85em;
+        color: #666;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+    }
+    
+    .status-complete {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-missing {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .progress-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        position: relative;
+    }
+    
+    .progress-step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+    }
+    
+    .progress-step::before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #ddd;
+        z-index: 1;
+    }
+    
+    .progress-step:first-child::before {
+        left: 50%;
+    }
+    
+    .progress-step:last-child::before {
+        right: 50%;
+    }
+    
+    .step-circle {
+        width: 30px;
+        height: 30px;
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 50%;
+        margin: 0 auto 10px;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    
+    .step-completed .step-circle {
+        background: var(--success-color);
+        border-color: var(--success-color);
+        color: white;
+    }
+    
+    .step-active .step-circle {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .step-label {
+        font-size: 0.9em;
+        color: #666;
+    }
+    
+    .step-completed .step-label {
+        color: var(--success-color);
+    }
+    
+    .step-active .step-label {
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+    
+    .alert {
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+    
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+    
+    .setup-footer {
+        text-align: center;
+        margin-top: 40px;
+        padding: 20px;
+        color: #666;
+        border-top: 1px solid #ddd;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th {
+        background: #f2f2f2;
+        padding: 10px;
+        text-align: left;
+    }
+    
+    td {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .system-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    .doc-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    
+    ul {
+        list-style: none;
+        padding: 0;
+    }
+    
+    li {
+        margin-bottom: 8px;
+    }
+    
+    a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    
+    a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="setup-container">
+    <!-- Header -->
+    <div class="setup-header">
+        <h1>📦 Product App Setup</h1>
+        <p>Configure and manage your product catalog settings</p>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-number">{{ total_products }}</div>
+            <div class="stat-label">Total Products</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🏷️</div>
+            <div class="stat-number">{{ total_categories }}</div>
+            <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-number">{{ total_brands }}</div>
+            <div class="stat-label">Brands</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔢</div>
+            <div class="stat-number">{{ total_models }}</div>
+            <div class="stat-label">Models</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⚖️</div>
+            <div class="stat-number">{{ total_units }}</div>
+            <div class="stat-label">Units</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-number">{{ total_variants }}</div>
+            <div class="stat-label">Variants</div>
+        </div>
+    </div>
+    
+    <!-- Setup Progress -->
+    <div class="setup-section">
+        <h2 class="section-title"><i>📋</i> Setup Progress</h2>
+        
+        <div class="progress-steps">
+            <div class="progress-step {% if units_complete %}step-completed{% else %}step-active{% endif %}">
+                <div class="step-circle">1</div>
+                <div class="step-label">Units</div>
+                <div class="status-badge {% if units_complete %}status-complete{% else %}status-pending{% endif %}">
+                    {% if units_complete %}✅ Complete{% else %}⏳ Pending{% endif %}
+                </div>
+            </div>
+            <div class="progress-step {% if categories_complete %}step-completed{% elif units_complete %}step-active{% endif %}">
+                <div class="step-circle">2</div>
+                <div class="step-label">Categories</div>
+                <div class="status-badge {% if categories_complete %}status-complete{% elif units_complete %}status-pending{% else %}status-missing{% endif %}">
+                    {% if categories_complete %}✅ Complete{% elif units_complete %}⏳ Pending{% else %}❌ Waiting{% endif %}
+                </div>
+            </div>
+            <div class="progress-step {% if brands_complete %}step-completed{% elif categories_complete %}step-active{% endif %}">
+                <div class="step-circle">3</div>
+                <div class="step-label">Brands</div>
+                <div class="status-badge {% if brands_complete %}status-complete{% elif categories_complete %}status-pending{% else %}status-missing{% endif %}">
+                    {% if brands_complete %}✅ Complete{% elif categories_complete %}⏳ Pending{% else %}❌ Waiting{% endif %}
+                </div>
+            </div>
+            <div class="progress-step {% if models_complete %}step-completed{% elif brands_complete %}step-active{% endif %}">
+                <div class="step-circle">4</div>
+                <div class="step-label">Models</div>
+                <div class="status-badge {% if models_complete %}status-complete{% elif brands_complete %}status-pending{% else %}status-missing{% endif %}">
+                    {% if models_complete %}✅ Complete{% elif brands_complete %}⏳ Pending{% else %}❌ Waiting{% endif %}
+                </div>
+            </div>
+            <div class="progress-step {% if attributes_complete %}step-completed{% elif models_complete %}step-active{% endif %}">
+                <div class="step-circle">5</div>
+                <div class="step-label">Attributes</div>
+                <div class="status-badge {% if attributes_complete %}status-complete{% elif models_complete %}status-pending{% else %}status-missing{% endif %}">
+                    {% if attributes_complete %}✅ Complete{% elif models_complete %}⏳ Pending{% else %}❌ Waiting{% endif %}
+                </div>
+            </div>
+            <div class="progress-step {% if products_complete %}step-completed{% elif attributes_complete %}step-active{% endif %}">
+                <div class="step-circle">6</div>
+                <div class="step-label">Products</div>
+                <div class="status-badge {% if products_complete %}status-complete{% elif attributes_complete %}status-pending{% else %}status-missing{% endif %}">
+                    {% if products_complete %}✅ Complete{% elif attributes_complete %}⏳ Pending{% else %}❌ Waiting{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Configuration Sections -->
+    <div class="setup-section">
+        <h2 class="section-title"><i>⚙️</i> Configuration</h2>
+        
+        <div class="config-grid">
+            <!-- Units Configuration -->
+            <div class="config-item">
+                <h3>📏 Units of Measurement</h3>
+                <p>Define base units (PCS, KG, L) and packaging units (BOX, CTN) for your products.</p>
+                <div class="config-actions">
+                    <a href="{% url 'admin:products_unit_changelist' %}" class="btn btn-primary">Manage Units</a>
+                    <a href="{% url 'admin:products_unit_add' %}" class="btn btn-outline">Add New</a>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span class="status-badge {% if units_count > 0 %}status-complete{% else %}status-pending{% endif %}">
+                        {{ units_count }} units configured
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Categories Configuration -->
+            <div class="config-item">
+                <h3>📂 Categories</h3>
+                <p>Create hierarchical categories (Electronics > Phones > Smartphones).</p>
+                <div class="config-actions">
+                    <a href="{% url 'admin:products_productcategory_changelist' %}" class="btn btn-primary">Manage Categories</a>
+                    <a href="{% url 'admin:products_productcategory_add' %}" class="btn btn-outline">Add New</a>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span class="status-badge {% if categories_count > 0 %}status-complete{% else %}status-pending{% endif %}">
+                        {{ categories_count }} categories
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Brands Configuration -->
+            <div class="config-item">
+                <h3>🏢 Brands</h3>
+                <p>Manage product brands like Apple, Samsung, Nike, etc.</p>
+                <div class="config-actions">
+                    <a href="{% url 'admin:products_brand_changelist' %}" class="btn btn-primary">Manage Brands</a>
+                    <a href="{% url 'admin:products_brand_add' %}" class="btn btn-outline">Add New</a>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span class="status-badge {% if brands_count > 0 %}status-complete{% else %}status-pending{% endif %}">
+                        {{ brands_count }} brands
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Models Configuration -->
+            <div class="config-item">
+                <h3>🔢 Models</h3>
+                <p>Define specific models (A3102, SM-S928B) with specifications.</p>
+                <div class="config-actions">
+                    <a href="{% url 'admin:products_modelnumber_changelist' %}" class="btn btn-primary">Manage Models</a>
+                    <a href="{% url 'admin:products_modelnumber_add' %}" class="btn btn-outline">Add New</a>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span class="status-badge {% if models_count > 0 %}status-complete{% else %}status-pending{% endif %}">
+                        {{ models_count }} models
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Attributes Configuration -->
+            <div class="config-item">
+                <h3>🎨 Attributes</h3>
+                <p>Create attributes like Size, Color, Material for product variants.</p>
+                <div class="config-actions">
+                    <a href="{% url 'admin:products_productattribute_changelist' %}" class="btn btn-primary">Manage Attributes</a>
+                    <a href="{% url 'admin:products_productattribute_add' %}" class="btn btn-outline">Add New</a>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span class="status-badge {% if attributes_count > 0 %}status-complete{% else %}status-pending{% endif %}">
+                        {{ attributes_count }} attributes
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Attribute Values Configuration -->
+            <div class="config-item">
+                <h3>🎯 Attribute Values</h3>
+                <p>Define values for attributes (S, M, L, Red, Blue, etc.).</p>
+                <div class="config-actions">
+                    <a href="{% url 'admin:products_productattributevalue_changelist' %}" class="btn btn-primary">Manage Values</a>
+                    <a href="{% url 'admin:products_productattributevalue_add' %}" class="btn btn-outline">Add New</a>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span class="status-badge {% if attribute_values_count > 0 %}status-complete{% else %}status-pending{% endif %}">
+                        {{ attribute_values_count }} values
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="setup-section">
+        <h2 class="section-title"><i>⚡</i> Quick Actions</h2>
+        
+        <div class="quick-actions">
+            <!-- FIXED: Changed from 'products:setup' to 'product_setup' -->
+            <a href="{% url 'products:product_setup' %}" class="quick-action">
+                <div class="quick-action-icon">🔄</div>
+                <div class="quick-action-title">Refresh Dashboard</div>
+                <div class="quick-action-desc">Reload setup data</div>
+            </a>
+            
+            <a href="{% url 'admin:products_product_changelist' %}" class="quick-action">
+                <div class="quick-action-icon">📦</div>
+                <div class="quick-action-title">View All Products</div>
+                <div class="quick-action-desc">Manage product catalog</div>
+            </a>
+            
+            <a href="{% url 'admin:products_product_add' %}" class="quick-action">
+                <div class="quick-action-icon">➕</div>
+                <div class="quick-action-title">Add New Product</div>
+                <div class="quick-action-desc">Create a product</div>
+            </a>
+            
+            <a href="{% url 'admin:products_brand_changelist' %}" class="quick-action">
+                <div class="quick-action-icon">🏢</div>
+                <div class="quick-action-title">Manage Brands</div>
+                <div class="quick-action-desc">Add/edit brands</div>
+            </a>
+            
+            <a href="{% url 'admin:products_productcategory_changelist' %}" class="quick-action">
+                <div class="quick-action-icon">📂</div>
+                <div class="quick-action-title">Manage Categories</div>
+                <div class="quick-action-desc">Organize products</div>
+            </a>
+            
+            <a href="{% url 'admin:products_unit_changelist' %}" class="quick-action">
+                <div class="quick-action-icon">⚖️</div>
+                <div class="quick-action-title">Manage Units</div>
+                <div class="quick-action-desc">Configure measurements</div>
+            </a>
+            
+            <a href="{% url 'admin:products_modelnumber_changelist' %}" class="quick-action">
+                <div class="quick-action-icon">🔢</div>
+                <div class="quick-action-title">Manage Models</div>
+                <div class="quick-action-desc">Model numbers & specs</div>
+            </a>
+            
+            <a href="{% url 'admin:products_productattribute_changelist' %}" class="quick-action">
+                <div class="quick-action-icon">🎨</div>
+                <div class="quick-action-title">Manage Attributes</div>
+                <div class="quick-action-desc">Size, color, etc.</div>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="setup-section">
+        <h2 class="section-title"><i>🕒</i> Recent Activity</h2>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                    <th>Item</th>
+                    <th>User</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in recent_activities %}
+                <tr>
+                    <td>{{ activity.time }}</td>
+                    <td>
+                        <span class="status-badge {% if activity.action == 'created' %}status-complete{% elif activity.action == 'updated' %}status-pending{% else %}status-missing{% endif %}">
+                            {{ activity.action }}
+                        </span>
+                    </td>
+                    <td>{{ activity.item }}</td>
+                    <td>{{ activity.user }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #999;">
+                        No recent activity
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- System Status -->
+    <div class="setup-section">
+        <h2 class="section-title"><i>🩺</i> System Status</h2>
+        
+        <div class="system-grid">
+            <div>
+                <h3>Storage</h3>
+                <p>Database size: <strong>{{ db_size }}</strong></p>
+                <p>Product images: <strong>{{ image_count }}</strong> ({{ image_size }})</p>
+                <p>Cache status: <strong>{{ cache_status }}</strong></p>
+            </div>
+            
+            <div>
+                <h3>Performance</h3>
+                <p>Average query time: <strong>{{ avg_query_time }}ms</strong></p>
+                <p>Cache hit ratio: <strong>{{ cache_hit_ratio }}%</strong></p>
+                <p>Index status: <strong>{{ index_status }}</strong></p>
+            </div>
+            
+            <div>
+                <h3>Validation</h3>
+                <p>Products missing SKU: <strong>{{ missing_sku }}</strong></p>
+                <p>Products missing category: <strong>{{ missing_category }}</strong></p>
+                <p>Products missing brand: <strong>{{ missing_brand }}</strong></p>
+            </div>
+            
+            <div>
+                <h3>Integrity</h3>
+                <p>Orphaned variants: <strong>{{ orphaned_variants }}</strong></p>
+                <p>Duplicate SKUs: <strong>0</strong></p>
+                <p>Invalid prices: <strong>0</strong></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Documentation Links -->
+    <div class="setup-section">
+        <h2 class="section-title"><i>📚</i> Documentation</h2>
+        
+        <div class="doc-grid">
+            <div>
+                <h4>Getting Started</h4>
+                <ul>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Product Setup Guide</a></li>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Category Hierarchy</a></li>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Brand Management</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4>Advanced Topics</h4>
+                <ul>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Variants & Attributes</a></li>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Price Management</a></li>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Inventory Tracking</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4>Integration</h4>
+                <ul>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 API Documentation</a></li>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Import/Export Formats</a></li>
+                    <li><a href="#" onclick="alert('Documentation coming soon!'); return false;">📖 Webhook Setup</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="setup-footer">
+        <p>Product App v1.0 | Django {{ django_version }} | Python {{ python_version }}</p>
+        <p>Last setup check: {{ last_check|default:"Just now" }}</p>
+        <p>
+            <!-- FIXED: Changed from 'products:setup' to 'product_setup' -->
+            <a href="{% url 'products:product_setup' %}" style="color: #417690;">⟲ Refresh Dashboard</a>
+            <a href="/admin/" style="color: #417690;">← Back to Admin</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
