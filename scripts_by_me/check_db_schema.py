@@ -3,12 +3,12 @@ import os
 import sys
 import django
 
-# Add the project directory to the Python path
-project_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(project_dir)
+# Add the project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 # Set the Django settings module
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'erp_system.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 # Setup Django
 django.setup()

@@ -3,25 +3,12 @@ import os
 import sys
 import django
 
-# Add the current directory to Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
-
-# Print debug info
-print(f"Current directory: {current_dir}")
-print(f"Python path: {sys.path}")
-print(f"Looking for config.settings...")
+# Add the project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 # Set the Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-
-# Verify we can import the settings
-try:
-    __import__('config.settings')
-    print("✅ Successfully found config.settings")
-except ImportError as e:
-    print(f"❌ Error importing config.settings: {e}")
-    sys.exit(1)
 
 # Setup Django
 django.setup()
@@ -67,6 +54,14 @@ def get_field_info(field):
     if field.is_relation and hasattr(field, 'related_model') and field.related_model:
         related_model_name = field.related_model.__name__
         field_type = f"{field_type} → {related_model_name}"
+
+        # Check for related_name
+        if hasattr(field, 'remote_field') and field.remote_field:
+            related_name = getattr(field.remote_field, 'related_name', None)
+            if related_name:
+                options.append(f"related_name='{related_name}'")
+            else:
+                options.append("MISSING related_name")
     
     return field_type, options
 
@@ -92,7 +87,6 @@ def list_all_model_fields():
         # Separate concrete fields and relations for better display
         concrete_fields = [f for f in all_fields if f.concrete and not f.auto_created]
         relation_fields = [f for f in all_fields if f.is_relation and f.concrete]
-        reverse_relations = [f for f in all_fields if f.is_relation and not f.concrete]
         
         # Print concrete fields
         if concrete_fields:
@@ -114,13 +108,6 @@ def list_all_model_fields():
                     field_str += f" ({', '.join(options)})"
                 print(field_str)
         
-        # Print reverse relations (optional - comment out if too verbose)
-        if reverse_relations and False:  # Set to True if you want to see reverse relations
-            print("\n  🔄 Reverse Relations:")
-            for field in sorted(reverse_relations, key=lambda x: x.name):
-                field_type, _ = get_field_info(field)
-                print(f"    • {field.name}: {field_type}")
-        
         # Count fields
         field_count = len(concrete_fields) + len(relation_fields)
         print(f"\n  📊 Total fields: {field_count} (Concrete: {len(concrete_fields)}, Relations: {len(relation_fields)})")
@@ -135,13 +122,28 @@ def list_all_model_fields():
                     issues.append(f"DecimalField '{field.name}' missing max_digits")
                 if not field.decimal_places:
                     issues.append(f"DecimalField '{field.name}' missing decimal_places")
-        
+
+            # Check naming conventions
+            if isinstance(field, models.DateTimeField) and not field.name.endswith('_at') and field.name not in ['created', 'modified']:
+                issues.append(f"DateTimeField '{field.name}' should end with '_at'")
+            if isinstance(field, models.DateField) and not field.name.endswith('_on') and not field.name.endswith('_date') and field.name not in ['date']:
+                 # Allowing _date or date for now as it's common, but checklist said _on
+                 if not field.name.endswith('_on'):
+                    issues.append(f"DateField '{field.name}' should end with '_on'")
+            if isinstance(field, models.BooleanField) and not (field.name.startswith('is_') or field.name.startswith('has_') or field.name == 'active'):
+                issues.append(f"BooleanField '{field.name}' should start with 'is_' or 'has_'")
+
+        # Check relation issues
+        for field in relation_fields:
+             if hasattr(field, 'remote_field') and field.remote_field:
+                related_name = getattr(field.remote_field, 'related_name', None)
+                if not related_name:
+                    issues.append(f"{type(field).__name__} '{field.name}' missing related_name")
+
         if issues:
             print("\n  ⚠️  Potential Issues:")
-            for issue in issues[:3]:  # Show first 3 issues
+            for issue in issues:
                 print(f"    • {issue}")
-            if len(issues) > 3:
-                print(f"    • ... and {len(issues)-3} more issues")
 
 if __name__ == "__main__":
     list_all_model_fields()
