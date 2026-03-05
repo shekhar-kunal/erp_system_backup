@@ -34,26 +34,34 @@ class CustomerAdminForm(forms.ModelForm):
         elif self.data.get('customer_type'):
             customer_type = self.data.get('customer_type')
         
+        # In view-only mode Django excludes all model fields from self.fields
+        # (has_change_permission=False). Skip all field manipulation in that case.
+        if not self.fields or 'customer_type' not in self.fields:
+            return
+
         # Make all fields not required initially
-        self.fields['first_name'].required = False
-        self.fields['last_name'].required = False
-        self.fields['company_name'].required = False
-        
+        for _f in ('first_name', 'last_name', 'company_name'):
+            if _f in self.fields:
+                self.fields[_f].required = False
+
         # Adjust required fields and disable irrelevant fields based on customer type
         if customer_type == Customer.CustomerType.INDIVIDUAL:
-            self.fields['first_name'].required = True
-            self.fields['last_name'].required = True
-            
+            if 'first_name' in self.fields:
+                self.fields['first_name'].required = True
+            if 'last_name' in self.fields:
+                self.fields['last_name'].required = True
+
             # Disable business fields for individual customers
             business_fields = ['company_name', 'company_registration', 'business_type', 'website']
             for field_name in business_fields:
                 if field_name in self.fields:
                     self.fields[field_name].widget.attrs['disabled'] = True
                     self.fields[field_name].help_text = "Not applicable for individual customers"
-                    
+
         elif customer_type == Customer.CustomerType.BUSINESS:
-            self.fields['company_name'].required = True
-            
+            if 'company_name' in self.fields:
+                self.fields['company_name'].required = True
+
             # Disable individual fields for business customers
             individual_fields = ['first_name', 'last_name', 'date_of_birth']
             for field_name in individual_fields:

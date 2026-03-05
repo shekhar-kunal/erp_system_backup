@@ -1,0 +1,114 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Reassign &amp; Delete – {{ verbose_name_plural|capfirst }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_label|capfirst }}</a>
+  &rsaquo; <a href="{{ changelist_url }}">{{ verbose_name_plural|capfirst }}</a>
+  &rsaquo; Reassign &amp; Delete
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Reassign &amp; Delete {{ verbose_name_plural|capfirst }}</h1>
+
+{% if error %}
+<p class="errornote">{{ error }}</p>
+{% endif %}
+
+<div style="max-width:680px;">
+
+  {# ── Records to delete ── #}
+  <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:4px; padding:14px 18px; margin-bottom:20px;">
+    <strong style="color:#856404;">&#9888; You are about to permanently delete the following {{ verbose_name_plural }}:</strong>
+    <ul style="margin:8px 0 0 20px;">
+      {% for obj in objects_to_delete %}
+      <li><strong>{{ obj }}</strong></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {# ── Protected references ── #}
+  {% if relation_summary %}
+  <div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:4px; padding:14px 18px; margin-bottom:20px;">
+    <strong style="color:#721c24;">&#128274; Protected references that will be reassigned:</strong>
+    <table style="margin-top:10px; width:100%; border-collapse:collapse; font-size:13px;">
+      <thead>
+        <tr style="background:#f1aeb5;">
+          <th style="text-align:left; padding:6px 10px; border:1px solid #f5c6cb;">Model</th>
+          <th style="text-align:left; padding:6px 10px; border:1px solid #f5c6cb;">Field</th>
+          <th style="text-align:right; padding:6px 10px; border:1px solid #f5c6cb;">Records</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rel in relation_summary %}
+        <tr style="background:{% if forloop.counter|divisibleby:2 %}#fff{% else %}#fdf2f3{% endif %};">
+          <td style="padding:6px 10px; border:1px solid #f5c6cb;">{{ rel.model_name }}</td>
+          <td style="padding:6px 10px; border:1px solid #f5c6cb;"><code>{{ rel.field_name }}</code></td>
+          <td style="padding:6px 10px; border:1px solid #f5c6cb; text-align:right; font-weight:bold;">{{ rel.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p style="margin:10px 0 0; color:#721c24; font-size:12px;">
+      All {{ relation_summary|length }} reference group(s) above will be updated to point to the replacement you select below.
+    </p>
+  </div>
+  {% else %}
+  <div style="background:#d4edda; border:1px solid #c3e6cb; border-radius:4px; padding:12px 18px; margin-bottom:20px;">
+    <strong style="color:#155724;">&#10003; No protected references found.</strong>
+    These records can be deleted directly.
+  </div>
+  {% endif %}
+
+  {# ── Replacement selection form ── #}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="object_ids" value="{{ object_ids }}">
+
+    {% if relation_summary %}
+    {# Replacement required — there are protected references to move #}
+    <div style="background:#fff; border:1px solid #dee2e6; border-radius:4px; padding:18px; margin-bottom:20px;">
+      {% if available_replacements.exists %}
+      <label for="replacement" style="display:block; font-weight:bold; margin-bottom:8px;">
+        Select replacement {{ verbose_name }}:
+        <span style="color:#999; font-weight:normal;">(all references above will point to this record)</span>
+      </label>
+      <select name="replacement" id="replacement"
+              style="width:100%; max-width:420px; padding:6px 10px; border:1px solid #ccc; border-radius:4px; font-size:14px;">
+        <option value="">— choose a replacement —</option>
+        {% for obj in available_replacements %}
+        <option value="{{ obj.pk }}">{{ obj }}</option>
+        {% endfor %}
+      </select>
+      {% else %}
+      <p class="errornote" style="margin:0;">
+        No replacement {{ verbose_name_plural }} are available.
+        Please create a replacement record first, then retry.
+      </p>
+      {% endif %}
+    </div>
+    {% else %}
+    {# No references — no replacement needed #}
+    <div style="background:#fff; border:1px solid #dee2e6; border-radius:4px; padding:12px 18px; margin-bottom:20px; color:#6c757d;">
+      No references need to be reassigned. The record(s) can be deleted immediately.
+    </div>
+    {% endif %}
+
+    <div style="display:flex; gap:10px; align-items:center;">
+      {% if not relation_summary or available_replacements.exists %}
+      <input type="submit"
+             value="{% if relation_summary %}Reassign &amp; Delete{% else %}Delete{% endif %}"
+             class="default button"
+             style="background:#dc3545; border-color:#dc3545;"
+             onclick="return confirm('This action cannot be undone. Proceed?')">
+      {% endif %}
+      <a href="{{ changelist_url }}" class="button">Cancel</a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

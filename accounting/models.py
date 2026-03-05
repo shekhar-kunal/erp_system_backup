@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models, transaction
 from django.db.models import Sum, F, Q
 from django.core.exceptions import ValidationError
@@ -604,7 +605,7 @@ class FiscalYear(models.Model):
     end_date = models.DateField()
     is_closed = models.BooleanField(default=False)
     closed_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -663,7 +664,7 @@ class FiscalPeriod(models.Model):
     end_date = models.DateField()
     is_closed = models.BooleanField(default=False)
     closed_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True
@@ -777,7 +778,7 @@ class Account(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True
@@ -901,7 +902,7 @@ class AccountingSettings(models.Model):
     # Audit
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True
@@ -995,14 +996,14 @@ class JournalEntry(models.Model):
     # Approval tracking
     requires_approval = models.BooleanField(default=False)
     requested_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='requested_journal_entries'
     )
     approved_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -1011,7 +1012,7 @@ class JournalEntry(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
     approval_notes = models.TextField(blank=True)
     rejected_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -1046,7 +1047,7 @@ class JournalEntry(models.Model):
     # Audit
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -1054,7 +1055,7 @@ class JournalEntry(models.Model):
     )
     posted_at = models.DateTimeField(null=True, blank=True)
     posted_by = models.ForeignKey(
-        'auth.User',
+        settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -1261,7 +1262,7 @@ class AuditLog(models.Model):
         ('RECONCILE', 'Reconcile'),
     ]
     
-    user = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=20, choices=ACTION_TYPES)
     timestamp = models.DateTimeField(auto_now_add=True)
     

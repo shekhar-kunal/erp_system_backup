@@ -9,6 +9,7 @@ from django.utils import timezone
 from datetime import datetime
 import csv
 from exports.mixins import ConfigurableExportMixin
+from exports.column_config import ColumnConfigMixin
 from rbac.admin_mixins import ERPAdminMixin
 
 from .models import (
@@ -26,12 +27,25 @@ from .mixins import DashboardMixin
 # ===================== WAREHOUSE ADMIN =====================
 
 @admin.register(Warehouse)
-class WarehouseAdmin(ERPAdminMixin, ConfigurableExportMixin, DashboardMixin, admin.ModelAdmin):
+class WarehouseAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, DashboardMixin, admin.ModelAdmin):
     export_fields = ['name', 'code', 'warehouse_type', 'temperature_zone', 'address', 'phone', 'email', 'is_active', 'created_at']
     export_methods = {
         'warehouse_type': lambda obj: obj.get_warehouse_type_display(),
         'is_active': lambda obj: 'Yes' if obj.is_active else 'No',
     }
+    ALL_LIST_COLUMNS = [
+        ('name', 'Name'),
+        ('code', 'Code'),
+        ('warehouse_type', 'Type'),
+        ('is_active', 'Active'),
+        ('capacity_display', 'Capacity'),
+        ('utilization_indicator', 'Utilization'),
+        ('stock_value_display', 'Stock Value'),
+        ('item_count', 'Items'),
+        ('last_updated', 'Last Movement'),
+    ]
+    DEFAULT_COLUMNS = ['name', 'code', 'warehouse_type', 'is_active', 'capacity_display', 'stock_value_display', 'item_count']
+    REQUIRED_COLUMNS = ['name']
 
     list_display = [
         'name', 'code', 'warehouse_type', 'is_active',
@@ -224,7 +238,23 @@ class WarehouseSectionAdmin(ERPAdminMixin, admin.ModelAdmin):
 # ===================== STOCK ADMIN =====================
 
 @admin.register(Stock)
-class StockAdmin(ERPAdminMixin, ConfigurableExportMixin, DashboardMixin, admin.ModelAdmin):
+class StockAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, DashboardMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('product_link', 'Product'),
+        ('warehouse_link', 'Warehouse'),
+        ('section_link', 'Section'),
+        ('quantity_display', 'Quantity'),
+        ('unit_info', 'Unit'),
+        ('available_display', 'Available'),
+        ('reorder_level', 'Reorder Level'),
+        ('status_indicator', 'Status'),
+        ('batch_count', 'Batches'),
+        ('value_display', 'Value'),
+        ('last_movement_display', 'Last Movement'),
+    ]
+    DEFAULT_COLUMNS = ['product_link', 'warehouse_link', 'quantity_display', 'available_display', 'reorder_level', 'status_indicator', 'value_display']
+    REQUIRED_COLUMNS = ['product_link']
+
     list_display = [
         'product_link', 'warehouse_link', 'section_link',
         'quantity_display', 'unit_info', 'available_display',

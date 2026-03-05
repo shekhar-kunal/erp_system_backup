@@ -32,6 +32,18 @@ from django.urls import path, reverse
 logger = logging.getLogger(__name__)
 
 
+def _has_rbac_role(user):
+    """Return True if user has system admin access or an active RBAC role."""
+    if getattr(user, 'is_system_admin', False):
+        return True
+    try:
+        from rbac.services import PermissionService
+        profile = PermissionService._get_profile(user)
+        return bool(profile and profile.role and profile.role.is_active)
+    except Exception:
+        return True  # fail open
+
+
 class ConfigurableExportMixin:
     """
     Inherits the same export_fields / export_methods attributes as ExcelExportMixin
@@ -100,7 +112,7 @@ class ConfigurableExportMixin:
 
         if not config.is_active:
             return actions
-        if config.require_staff and not request.user.is_staff:
+        if config.require_staff and not _has_rbac_role(request.user):
             return actions
 
         # RBAC: check module-level export permission and allowed formats

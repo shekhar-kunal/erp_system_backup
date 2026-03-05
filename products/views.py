@@ -86,6 +86,37 @@ def ajax_load_models(request):
         }, status=500)
 
 
+@require_GET
+@staff_member_required
+def ajax_product_info(request):
+    """
+    AJAX: return unit and price defaults for a product.
+    Used by the admin inline auto-fill JS.
+    Response keys:
+      sale_price  — product.price  (used in SO lines)
+      cost_price  — product.cost   (used in PO lines)
+      base_price  — product.base_price
+      unit_id     — product.base_unit.pk  (or null)
+      unit_name   — product.base_unit name (or "")
+    """
+    product_id = request.GET.get('id')
+    if not product_id:
+        return JsonResponse({'error': 'Missing id'}, status=400)
+    try:
+        product = Product.objects.select_related('base_unit').get(pk=product_id)
+    except (Product.DoesNotExist, ValueError):
+        return JsonResponse({'error': 'Product not found'}, status=404)
+
+    data = {
+        'sale_price': str(product.price),
+        'cost_price': str(product.cost),
+        'base_price': str(product.base_price),
+        'unit_id':    product.base_unit_id,
+        'unit_name':  str(product.base_unit) if product.base_unit else '',
+    }
+    return JsonResponse(data)
+
+
 @staff_member_required
 def product_setup(request):
     """Product app setup dashboard view"""

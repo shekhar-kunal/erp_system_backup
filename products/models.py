@@ -1,4 +1,5 @@
 from config_settings.models import PricingConfig, Currency
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
@@ -404,7 +405,7 @@ class ProductPriceHistory(models.Model):
     product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='price_history')
     old_price = models.DecimalField(max_digits=10, decimal_places=2)
     new_price = models.DecimalField(max_digits=10, decimal_places=2)
-    changed_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     changed_at = models.DateTimeField(auto_now_add=True)
     reason = models.CharField(max_length=255, blank=True)
     
@@ -830,7 +831,7 @@ class Product(TimestampMixin, ActiveMixin, models.Model):
     slug = models.SlugField(unique=True, blank=True)
     category = models.ForeignKey(
         ProductCategory,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name='products'
@@ -849,7 +850,7 @@ class Product(TimestampMixin, ActiveMixin, models.Model):
     
     model_number = models.ForeignKey(
         ModelNumber,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         related_name='products',
         null=True,
         blank=True,

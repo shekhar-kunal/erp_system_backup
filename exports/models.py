@@ -170,6 +170,34 @@ class UserExportPreference(models.Model):
         return f"{self.user.username} / {self.module_key} → {self.preferred_format}"
 
 
+class UserColumnPreference(models.Model):
+    """
+    Per-user, per-model column visibility and ordering for admin list views.
+    Persists across sessions so users always see their preferred columns.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='column_preferences',
+    )
+    model_key = models.CharField(
+        max_length=100,
+        help_text="App + model label, e.g. 'products.unit'",
+    )
+    columns = models.JSONField(
+        default=list,
+        help_text="Ordered list of visible column field names",
+    )
+
+    class Meta:
+        unique_together = [('user', 'model_key')]
+        verbose_name = "User Column Preference"
+        verbose_name_plural = "User Column Preferences"
+
+    def __str__(self):
+        return f"{self.user.username} / {self.model_key} columns"
+
+
 class ExportLog(models.Model):
     """
     Immutable audit record for every export action. Never updated after creation.

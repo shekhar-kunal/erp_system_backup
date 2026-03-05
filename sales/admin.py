@@ -12,6 +12,7 @@ from .models import Customer, SalesOrder, SalesOrderLine, SalesInvoice, Payment,
 from inventory.models import Stock
 from .forms import CustomerAdminForm
 from exports.mixins import ConfigurableExportMixin
+from exports.column_config import ColumnConfigMixin
 from rbac.admin_mixins import ERPAdminMixin
 
 
@@ -241,8 +242,21 @@ class DeliveryForm(forms.Form):
 # ============= CUSTOMER ADMIN =============
 
 @admin.register(Customer)
-class CustomerAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class CustomerAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
     form = CustomerAdminForm
+    ALL_LIST_COLUMNS = [
+        ('full_name', 'Name'),
+        ('email', 'Email'),
+        ('phone', 'Phone'),
+        ('customer_type', 'Type'),
+        ('payment_type', 'Payment Type'),
+        ('pricing_tier', 'Pricing Tier'),
+        ('pricing_tier_colored', 'Tier (Badge)'),
+        ('billing_country', 'Country'),
+        ('is_vip', 'VIP'),
+    ]
+    DEFAULT_COLUMNS = ['full_name', 'email', 'phone', 'customer_type', 'pricing_tier', 'billing_country', 'is_vip']
+    REQUIRED_COLUMNS = ['full_name']
     export_fields = [
         'full_name', 'email', 'phone', 'customer_type', 'payment_type',
         'pricing_tier', 'billing_country__name', 'billing_city__name',
@@ -439,7 +453,19 @@ class CustomerAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
 # ============= SALES ORDER ADMIN =============
 
 @admin.register(SalesOrder)
-class SalesOrderAdmin(ERPAdminMixin, ConfigurableExportMixin, SalesDashboardMixin, admin.ModelAdmin):
+class SalesOrderAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, SalesDashboardMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('order_number', 'Order #'),
+        ('customer', 'Customer'),
+        ('pricing_tier_display', 'Pricing Tier'),
+        ('status', 'Status'),
+        ('order_date', 'Date'),
+        ('total_amount_display', 'Total'),
+        ('delivery_status', 'Delivery'),
+        ('action_buttons', 'Actions'),
+    ]
+    DEFAULT_COLUMNS = ['order_number', 'customer', 'status', 'order_date', 'total_amount_display', 'delivery_status']
+    REQUIRED_COLUMNS = ['order_number']
     export_fields = [
         'order_number', 'customer__full_name', 'status', 'order_date',
         'total_amount', 'tax_amount', 'discount_amount', 'warehouse__name', 'created_at',
@@ -450,6 +476,9 @@ class SalesOrderAdmin(ERPAdminMixin, ConfigurableExportMixin, SalesDashboardMixi
         'warehouse__name': lambda obj: obj.warehouse.name if obj.warehouse else '',
     }
     export_sheet_name = 'Sales Orders'
+
+    class Media:
+        js = ('js/dependent_dropdowns.js', 'js/duplicate_confirmation.js', 'js/admin/product_autofill.js')
 
     list_display = (
         'order_number', 'customer', 'pricing_tier_display', 'status', 'order_date', 
@@ -476,7 +505,10 @@ class SalesOrderAdmin(ERPAdminMixin, ConfigurableExportMixin, SalesDashboardMixi
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.status in ['completed', 'cancelled', 'invoiced']:
-            return [f.name for f in self.model._meta.fields]
+            # Include all model fields plus admin method callables that appear in fieldsets
+            model_fields = [f.name for f in self.model._meta.fields]
+            admin_methods = ['total_amount_display', 'pricing_summary']
+            return model_fields + [m for m in admin_methods if m not in model_fields]
         return self.readonly_fields
 
     def get_urls(self):
@@ -528,7 +560,7 @@ class SalesOrderAdmin(ERPAdminMixin, ConfigurableExportMixin, SalesDashboardMixi
             if lines:
                 summary += f"<strong>Sample prices:</strong> {', '.join(lines)}"
             
-            return format_html(summary)
+            return format_html("{}", summary)
         return "-"
     pricing_summary.short_description = "Pricing Summary"
 

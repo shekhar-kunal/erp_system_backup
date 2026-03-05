@@ -186,9 +186,6 @@ class PurchaseOrderLineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Debug: Print available fields
-        print(f"PurchaseOrderLineForm fields: {list(self.fields.keys())}")
-        
         # Make fields required - check if they exist first
         if 'product' in self.fields:
             self.fields['product'].required = True

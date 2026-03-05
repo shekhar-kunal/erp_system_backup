@@ -13,6 +13,11 @@ class PermissionService:
     # Internal helpers                                                      #
     # ------------------------------------------------------------------ #
 
+    @classmethod
+    def is_system_admin(cls, user) -> bool:
+        """True if user has full system admin access (bypasses all RBAC checks)."""
+        return bool(user and getattr(user, 'is_system_admin', False))
+
     @staticmethod
     def _get_profile(user):
         """Return UserProfile for user, with 5-min caching."""

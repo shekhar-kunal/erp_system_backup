@@ -1,0 +1,76 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {{ media }}
+    <script src="{% static 'admin/js/cancel.js' %}" async></script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} delete-confirmation{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}">{{ object|truncatewords:"18" }}</a>
+&rsaquo; {% translate 'Delete' %}
+</div>
+{% endblock %}
+
+{% block content %}
+{% if perms_lacking %}
+  {% block delete_forbidden %}
+    <p>{% blocktranslate with escaped_object=object %}Deleting the {{ object_name }} "{{ escaped_object }}" would result in deleting related objects, but your account doesn't have permission to delete the following types of objects:{% endblocktranslate %}</p>
+    <ul id="deleted-objects">{{ perms_lacking|unordered_list }}</ul>
+    <div style="margin-top:20px;">
+      <a href="{% url opts|admin_urlname:'changelist' %}" class="button">&#10005; Close</a>
+    </div>
+  {% endblock %}
+{% elif protected %}
+  {% block delete_protected %}
+    <div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:4px; padding:16px 20px; margin-bottom:20px; max-width:700px;">
+      <strong style="color:#721c24; font-size:15px;">
+        &#128274; Cannot delete {{ object_name }} &ldquo;{{ object }}&rdquo;
+      </strong>
+      <p style="margin:10px 0 0; color:#721c24;">
+        The following records reference this {{ object_name }} and must be updated before it can be deleted:
+      </p>
+    </div>
+
+    <div style="background:#fff; border:1px solid #dee2e6; border-radius:4px; padding:16px 20px; margin-bottom:20px; max-width:700px;">
+      <ul id="deleted-objects" style="margin:0; padding-left:20px; line-height:1.8;">
+        {{ protected|unordered_list }}
+      </ul>
+    </div>
+
+    <p style="color:#6c757d; font-size:13px; max-width:700px;">
+      To delete this {{ object_name }}, first reassign or remove all the records listed above, then retry.
+      You can also use the <strong>changelist bulk action</strong> to reassign references and delete in one step.
+    </p>
+
+    <div style="margin-top:20px;">
+      <a href="{% url opts|admin_urlname:'changelist' %}" class="button default" style="background:#6c757d; border-color:#6c757d;">
+        &#10005; Close
+      </a>
+    </div>
+  {% endblock %}
+{% else %}
+  {% block delete_confirm %}
+    <p>{% blocktranslate with escaped_object=object %}Are you sure you want to delete the {{ object_name }} "{{ escaped_object }}"? All of the following related items will be deleted:{% endblocktranslate %}</p>
+    {% include "admin/includes/object_delete_summary.html" %}
+    <h2>{% translate "Objects" %}</h2>
+    <ul id="deleted-objects">{{ deleted_objects|unordered_list }}</ul>
+    <form method="post">{% csrf_token %}
+    <div>
+    <input type="hidden" name="post" value="yes">
+    {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
+    {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+    <input type="submit" value="{% translate "Yes, I'm sure" %}">
+    <a role="button" href="#" class="button cancel-link">{% translate "No, take me back" %}</a>
+    </div>
+    </form>
+  {% endblock %}
+{% endif %}
+{% endblock content %}

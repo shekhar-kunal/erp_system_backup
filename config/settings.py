@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+# Custom user model — must be set before any auth imports
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -39,9 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'django_select2',
-    
 
     # ERP apps
+    'accounts',   # custom user model + ERPAdminSite
     'core',
     'rbac',
     'mptt',
@@ -56,6 +60,7 @@ INSTALLED_APPS = [
     'dashboard',
     'exports',
     'reports',
+    'setup'
 ]
 
 MIDDLEWARE = [
@@ -68,6 +73,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'config_settings.middleware.ERPSetupMiddleware',
+    'setup.middleware.SetupMiddleware',  # Add setup middleware LAST
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -152,8 +158,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_URL = '/admin/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/admin/login/'
+LOGIN_URL           = '/login/'
+LOGIN_REDIRECT_URL  = '/dashboard/'    # overridden per-user in accounts/views.py
+LOGOUT_REDIRECT_URL = '/login/'
 
 INTERNAL_IPS = ['127.0.0.1']

@@ -15,6 +15,7 @@ from openpyxl.utils import get_column_letter
 from decimal import Decimal
 from datetime import datetime, date
 from exports.mixins import ConfigurableExportMixin
+from exports.column_config import ColumnConfigMixin
 from rbac.admin_mixins import ERPAdminMixin
 from .models import (
     Unit, ProductCategory, Product, ProductPacking, 
@@ -221,7 +222,18 @@ class PriceRangeFilter(admin.SimpleListFilter):
 # Price List Admin
 # -----------------------------
 @admin.register(PriceList)
-class PriceListAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class PriceListAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('name', 'Name'),
+        ('code', 'Code'),
+        ('priority', 'Priority'),
+        ('discount_method', 'Discount Method'),
+        ('product_count', 'Products'),
+        ('is_active', 'Active'),
+        ('is_default', 'Default'),
+    ]
+    DEFAULT_COLUMNS = ['name', 'code', 'priority', 'discount_method', 'product_count', 'is_active', 'is_default']
+    REQUIRED_COLUMNS = ['name']
     list_display = ('name', 'code', 'priority', 'discount_method', 'product_count', 'is_active', 'is_default')
     list_filter = ('is_active', 'is_default', 'discount_method')
     search_fields = ('name', 'code', 'description')
@@ -292,14 +304,13 @@ class ProductPriceInline(admin.TabularInline):
 # Unit Admin
 # -----------------------------
 @admin.register(Unit)
-class UnitAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class UnitAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
     list_display = ('name', 'short_name', 'code', 'unit_type', 'is_active', 'used_in_products')
     list_filter = ('unit_type', 'is_active')
     search_fields = ('name', 'short_name', 'code', 'unit_type')
     list_editable = ('is_active',)
     list_display_links = ('name', 'short_name')
     list_per_page = 25
-    change_list_template = 'admin/products/unit/change_list.html'
     ALL_LIST_COLUMNS = [
         ('name', 'Name'),
         ('short_name', 'Short Name'),
@@ -335,11 +346,6 @@ class UnitAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
                 'reassign-unit/',
                 self.admin_site.admin_view(self.reassign_unit_view),
                 name='products_unit_reassign',
-            ),
-            path(
-                'configure-columns/',
-                self.admin_site.admin_view(self.configure_columns_view),
-                name='products_unit_configure_columns',
             ),
         ]
         return custom_urls + urls
@@ -379,74 +385,6 @@ class UnitAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
             return obj.description[:60] + '…'
         return obj.description
     description_preview.short_description = 'Description'
-
-    # ------------------------------------------------------------------
-    # Column configuration – per-user, session-backed
-    # ------------------------------------------------------------------
-    def _col_session_key(self, user):
-        return f'unit_admin_columns_{user.pk}'
-
-    def get_list_display(self, request):
-        saved = request.session.get(self._col_session_key(request.user))
-        if saved:
-            valid = {col for col, _ in self.ALL_LIST_COLUMNS}
-            filtered = [c for c in saved if c in valid]
-            if filtered:
-                return filtered
-        return list(self.DEFAULT_COLUMNS)
-
-    def get_list_editable(self, request):
-        if 'is_active' in self.get_list_display(request):
-            return ('is_active',)
-        return ()
-
-    def configure_columns_view(self, request):
-        all_field_names = [col for col, _ in self.ALL_LIST_COLUMNS]
-        session_key = self._col_session_key(request.user)
-
-        if request.GET.get('reset'):
-            request.session.pop(session_key, None)
-            messages.success(request, "Column configuration reset to default.")
-            return redirect(reverse('admin:products_unit_changelist'))
-
-        if request.method == 'POST':
-            order_str = request.POST.get('col_order', '')
-            order = [c for c in order_str.split(',') if c in all_field_names]
-            for col in all_field_names:
-                if col not in order:
-                    order.append(col)
-            selected = set(request.POST.getlist('columns'))
-            for req in self.REQUIRED_COLUMNS:
-                selected.add(req)
-            visible = [c for c in order if c in selected]
-            if not visible:
-                visible = list(self.DEFAULT_COLUMNS)
-            request.session[session_key] = visible
-            messages.success(request, "Column configuration saved.")
-            return redirect(reverse('admin:products_unit_changelist'))
-
-        current_visible = request.session.get(session_key, self.DEFAULT_COLUMNS)
-        visible_set = set(current_visible)
-        col_labels = dict(self.ALL_LIST_COLUMNS)
-        ordered = list(current_visible) + [c for c in all_field_names if c not in visible_set]
-        columns_config = [
-            {
-                'field': col,
-                'label': col_labels[col],
-                'visible': col in visible_set,
-                'required': col in self.REQUIRED_COLUMNS,
-            }
-            for col in ordered
-        ]
-        context = {
-            **self.admin_site.each_context(request),
-            'title': 'Configure Columns',
-            'columns_config': columns_config,
-            'changelist_url': reverse('admin:products_unit_changelist'),
-            'opts': self.model._meta,
-            'has_view_permission': True,
-        }
-        return TemplateResponse(request, 'admin/products/unit/configure_columns.html', context)
 
     # ------------------------------------------------------------------
     # Actions
@@ -570,7 +508,17 @@ class UnitAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
 # Brand Admin
 # -----------------------------
 @admin.register(Brand)
-class BrandAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class BrandAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('name', 'Name'),
+        ('slug', 'Slug'),
+        ('is_active', 'Active'),
+        ('is_featured', 'Featured'),
+        ('product_count', 'Products'),
+        ('website_link', 'Website'),
+    ]
+    DEFAULT_COLUMNS = ['name', 'slug', 'is_active', 'is_featured', 'product_count', 'website_link']
+    REQUIRED_COLUMNS = ['name']
     list_display = ('name', 'slug', 'is_active', 'is_featured', 'product_count', 'website_link')
     list_filter = ('is_active', 'is_featured', 'created_at')
     search_fields = ('name', 'description')
@@ -639,7 +587,17 @@ class BrandAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
 # ModelNumber Admin
 # -----------------------------
 @admin.register(ModelNumber)
-class ModelNumberAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class ModelNumberAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('code', 'Code'),
+        ('name', 'Name'),
+        ('brand', 'Brand'),
+        ('is_active', 'Active'),
+        ('product_count', 'Products'),
+        ('created_at', 'Created'),
+    ]
+    DEFAULT_COLUMNS = ['code', 'name', 'brand', 'is_active', 'product_count', 'created_at']
+    REQUIRED_COLUMNS = ['code']
     list_display = ('code', 'name', 'brand', 'is_active', 'product_count', 'created_at')
     list_filter = ('brand', 'is_active', 'created_at')
     search_fields = ('name', 'code', 'brand__name')
@@ -695,14 +653,26 @@ class ModelNumberAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin)
 
 
 @admin.register(ProductCategory)
-class ProductCategoryAdmin(ERPAdminMixin, ConfigurableExportMixin, DraggableMPTTAdmin):
+class ProductCategoryAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, DraggableMPTTAdmin):
     mptt_indent_field = "name"
-    list_display = ('tree_actions', 'indented_title', 'code', 'active', 
+    ALL_LIST_COLUMNS = [
+        ('tree_actions', 'Actions'),
+        ('indented_title', 'Category'),
+        ('code', 'Code'),
+        ('active', 'Active'),
+        ('is_featured', 'Featured'),
+        ('position', 'Position'),
+        ('product_count', 'Products'),
+        ('get_total_products', 'Total Products'),
+    ]
+    DEFAULT_COLUMNS = ['tree_actions', 'indented_title', 'code', 'active', 'is_featured', 'position', 'product_count']
+    REQUIRED_COLUMNS = ['tree_actions', 'indented_title']
+    list_display = ('tree_actions', 'indented_title', 'code', 'active',
                    'is_featured', 'position', 'product_count', 'get_total_products')
     list_display_links = ('indented_title',)
     search_fields = ('name', 'slug', 'code', 'parent__name')
     list_filter = ('active', 'is_featured', 'created_at')
-    readonly_fields = ('created_at', 'updated_at', 'lft', 'rght', 'tree_id', 'level', 
+    readonly_fields = ('created_at', 'updated_at', 'lft', 'rght', 'tree_id', 'level',
                        'product_count', 'get_total_products')  # Methods are fine here
     list_editable = ('position', 'active', 'is_featured')
     list_per_page = 25
@@ -841,7 +811,21 @@ class ProductPriceHistoryInline(admin.TabularInline):
 # Product Admin - CLEANED VERSION (No inventory fields)
 # -----------------------------
 @admin.register(Product)
-class ProductAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class ProductAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('name', 'Name'),
+        ('brand', 'Brand'),
+        ('category', 'Category'),
+        ('sku', 'SKU'),
+        ('price', 'Price'),
+        ('discount_price', 'Discount Price'),
+        ('product_type', 'Type'),
+        ('active', 'Active'),
+        ('is_featured', 'Featured'),
+        ('image_preview', 'Image'),
+    ]
+    DEFAULT_COLUMNS = ['name', 'brand', 'category', 'sku', 'price', 'product_type', 'active', 'is_featured']
+    REQUIRED_COLUMNS = ['name']
     list_display = (
         'name', 'brand', 'category', 'sku', 'price', 'discount_price',
         'product_type', 'active', 'is_featured', 'image_preview'
@@ -1227,7 +1211,14 @@ class ProductAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
 # Product Attribute Admin
 # -----------------------------
 @admin.register(ProductAttribute)
-class ProductAttributeAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class ProductAttributeAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('name', 'Name'),
+        ('code', 'Code'),
+        ('value_count', 'Values'),
+    ]
+    DEFAULT_COLUMNS = ['name', 'code', 'value_count']
+    REQUIRED_COLUMNS = ['name']
     list_display = ['name', 'code', 'value_count']
     search_fields = ['name', 'code']
     inlines = []
@@ -1248,7 +1239,17 @@ class ProductAttributeValueAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.M
 
 
 @admin.register(ProductVariant)
-class ProductVariantAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class ProductVariantAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('product', 'Product'),
+        ('name', 'Variant Name'),
+        ('sku', 'SKU'),
+        ('effective_price', 'Price'),
+        ('stock_quantity', 'Stock'),
+        ('is_active', 'Active'),
+    ]
+    DEFAULT_COLUMNS = ['product', 'name', 'sku', 'effective_price', 'stock_quantity', 'is_active']
+    REQUIRED_COLUMNS = ['product']
     list_display = ['product', 'name', 'sku', 'effective_price', 'stock_quantity', 'is_active']
     list_filter = ['is_active', 'product']
     search_fields = ['name', 'sku', 'product__name']

@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html, mark_safe
 
 from .models import (
@@ -176,46 +175,7 @@ class UserProfileInline(admin.StackedInline):
     ]
 
 
-# ---------------------------------------------------------------------------
-# Extended User Admin (adds UserProfile inline)
-# ---------------------------------------------------------------------------
-
-class ERPUserAdmin(UserAdmin):
-    inlines = [UserProfileInline]
-    list_display = [
-        'username', 'email', 'first_name', 'last_name',
-        'is_staff', 'is_superuser', 'get_role', 'get_branch', 'is_active',
-    ]
-
-    def get_role(self, obj):
-        try:
-            role = obj.profile.role
-            if role:
-                return format_html(
-                    '<span style="background:#366092;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px">{}</span>',
-                    role.name,
-                )
-        except Exception:
-            pass
-        return '—'
-    get_role.short_description = 'Role'
-
-    def get_branch(self, obj):
-        try:
-            return obj.profile.branch.name if obj.profile.branch else '—'
-        except Exception:
-            return '—'
-    get_branch.short_description = 'Branch'
-
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        from .services import PermissionService
-        PermissionService.invalidate_user_cache(obj.pk)
-
-
-# Re-register User with extended admin
-admin.site.unregister(User)
-admin.site.register(User, ERPUserAdmin)
+# CustomUser is registered in accounts/admin.py (CustomUserAdmin with UserProfileInline)
 
 
 # ---------------------------------------------------------------------------
@@ -241,12 +201,12 @@ class AuditLogAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return request.user.is_superuser
+        return request.user.is_system_admin
 
     def user_link(self, obj):
         if obj.user:
             return format_html(
-                '<a href="/admin/auth/user/{}/change/">{}</a>',
+                '<a href="/admin/accounts/customuser/{}/change/">{}</a>',
                 obj.user.pk, obj.user.username,
             )
         return '—'

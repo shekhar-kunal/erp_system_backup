@@ -1,0 +1,113 @@
+{% extends "setup/base_setup.html" %}
+{% load static %}
+
+{% block content %}
+<div class="setup-card">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4><i class="fas fa-clipboard-check"></i> Review & Confirm</h4>
+            <p class="mb-0 small">Please review your configuration before installing</p>
+        </div>
+        <div class="card-body">
+
+            <div class="row g-3 mb-4">
+
+                <!-- Company -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title text-primary"><i class="fas fa-building me-1"></i> Company</h6>
+                            {% if company_data %}
+                                <p class="mb-1"><strong>{{ company_data.company_name }}</strong></p>
+                                <p class="mb-1 text-muted small">{{ company_data.city }}, {{ company_data.country }}</p>
+                                <p class="mb-0 text-muted small">{{ company_data.email }}</p>
+                            {% else %}
+                                <p class="text-muted">Not configured</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Administrator -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title text-primary"><i class="fas fa-user-shield me-1"></i> Administrator</h6>
+                            {% if admin_data %}
+                                <p class="mb-1"><strong>{{ admin_data.first_name }} {{ admin_data.last_name }}</strong></p>
+                                <p class="mb-1 text-muted small">@{{ admin_data.username }}</p>
+                                <p class="mb-0 text-muted small">{{ admin_data.email }}</p>
+                            {% else %}
+                                <p class="text-muted">Not configured</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Locale -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title text-primary"><i class="fas fa-globe me-1"></i> Locale</h6>
+                            {% if welcome_data %}
+                                <p class="mb-1">Language: <strong>{{ welcome_data.language }}</strong></p>
+                                <p class="mb-1">Timezone: <strong>{{ welcome_data.timezone }}</strong></p>
+                                <p class="mb-0">Date Format: <strong>{{ welcome_data.date_format }}</strong></p>
+                            {% else %}
+                                <p class="text-muted">Not configured</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modules -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title text-primary"><i class="fas fa-th-large me-1"></i> Modules</h6>
+                            {% if modules_data.modules %}
+                                {% for module in modules_data.modules %}
+                                    <span class="badge bg-primary me-1 mb-1">{{ module }}</span>
+                                {% endfor %}
+                                {% if modules_data.install_sample_data %}
+                                    <p class="mt-2 mb-0 text-muted small"><i class="fas fa-database me-1"></i> Sample data will be installed</p>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted">No modules selected</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="card border-warning mb-4">
+                    <div class="card-body">
+                        <div class="form-check">
+                            {{ form.confirm }}
+                            <label class="form-check-label" for="{{ form.confirm.id_for_label }}">
+                                <strong>I confirm that all information is correct and I am ready to install the ERP system.</strong>
+                            </label>
+                        </div>
+                        {% if form.confirm.errors %}
+                            <div class="text-danger small mt-1">{{ form.confirm.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'setup:setup_configure' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-rocket me-1"></i> Install Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

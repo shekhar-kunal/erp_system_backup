@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  {% if configure_columns_url %}
+  <li>
+    <a href="{{ configure_columns_url }}" class="viewsitelink">
+      &#9881; Configure Columns
+    </a>
+  </li>
+  {% endif %}
+{% endblock %}

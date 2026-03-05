@@ -1,0 +1,143 @@
+/* Setup Wizard Styles */
+.setup-body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 20px 0;
+}
+
+.setup-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.setup-header {
+    background: white;
+    padding: 20px;
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2px;
+}
+
+.setup-logo {
+    font-size: 1.5rem;
+    margin: 0;
+    color: #333;
+}
+
+.setup-logo i {
+    color: #667eea;
+}
+
+.setup-progress {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.setup-progress .progress {
+    flex: 1;
+    height: 10px;
+    border-radius: 5px;
+}
+
+.setup-progress .progress-bar {
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transition: width 0.3s ease;
+}
+
+.step-indicator {
+    min-width: 100px;
+    text-align: right;
+    color: #666;
+    font-weight: 500;
+}
+
+.setup-content {
+    background: white;
+    padding: 30px;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2px;
+}
+
+.setup-footer {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.setup-card {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form Styles */
+.form-control {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+/* Module Selection */
+.module-checkbox {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+/* Installation Progress */
+.installation-progress {
+    padding: 30px;
+}
+
+#install-log {
+    font-family: monospace;
+    font-size: 14px;
+}
+
+#install-log p {
+    margin: 5px 0;
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .setup-header .row > div {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    
+    .setup-progress {
+        flex-direction: column;
+    }
+    
+    .step-indicator {
+        text-align: center;
+    }
+}

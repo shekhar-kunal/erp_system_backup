@@ -7,8 +7,8 @@ from .services import PermissionService
 EXEMPT_PREFIXES = (
     '/static/',
     '/media/',
-    '/admin/login/',
-    '/admin/logout/',
+    '/login/',
+    '/logout/',
     '/admin/jsi18n/',
 )
 
@@ -32,7 +32,7 @@ class ERPSecurityMiddleware:
                         request,
                         'Your account is locked. Please contact your administrator.',
                     )
-                    return redirect('/admin/login/')
+                    return redirect('/login/')
 
                 if not PermissionService.is_within_working_hours(request.user):
                     logout(request)
@@ -40,6 +40,6 @@ class ERPSecurityMiddleware:
                         request,
                         'Access is restricted outside your configured working hours.',
                     )
-                    return redirect('/admin/login/')
+                    return redirect('/login/')
 
         return self.get_response(request)

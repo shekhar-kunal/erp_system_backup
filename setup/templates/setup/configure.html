@@ -1,0 +1,109 @@
+{% extends "setup/base_setup.html" %}
+{% load static %}
+
+{% block content %}
+<div class="setup-card">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4><i class="fas fa-sliders-h"></i> System Configuration</h4>
+            <p class="mb-0 small">Configure financial and inventory settings</p>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <h6 class="text-muted mb-3 border-bottom pb-2">Financial Settings</h6>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Fiscal Year Start Month</label>
+                        {{ form.fiscal_year_start }}
+                        {% if form.fiscal_year_start.errors %}<div class="text-danger small">{{ form.fiscal_year_start.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Fiscal Year Start Day</label>
+                        {{ form.fiscal_year_start_day }}
+                        {% if form.fiscal_year_start_day.errors %}<div class="text-danger small">{{ form.fiscal_year_start_day.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Tax System</label>
+                        {{ form.tax_system }}
+                        {% if form.tax_system.errors %}<div class="text-danger small">{{ form.tax_system.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Default Tax Rate (%)</label>
+                        {{ form.default_tax_rate }}
+                        {% if form.default_tax_rate.errors %}<div class="text-danger small">{{ form.default_tax_rate.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <h6 class="text-muted mb-3 border-bottom pb-2 mt-3">Inventory Settings</h6>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check form-switch mt-2">
+                            {{ form.enable_batches }}
+                            <label class="form-check-label" for="{{ form.enable_batches.id_for_label }}">
+                                Enable Batch Tracking
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check form-switch mt-2">
+                            {{ form.enable_serials }}
+                            <label class="form-check-label" for="{{ form.enable_serials.id_for_label }}">
+                                Enable Serial Numbers
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check form-switch mt-2">
+                            {{ form.allow_negative_stock }}
+                            <label class="form-check-label" for="{{ form.allow_negative_stock.id_for_label }}">
+                                Allow Negative Stock
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="text-muted mb-3 border-bottom pb-2 mt-3">Email Settings <small class="text-muted">(Optional)</small></h6>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">SMTP Server</label>
+                        {{ form.smtp_server }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Port</label>
+                        {{ form.smtp_port }}
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="form-check form-switch mt-4">
+                            {{ form.smtp_use_tls }}
+                            <label class="form-check-label" for="{{ form.smtp_use_tls.id_for_label }}">Use TLS</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">SMTP Username</label>
+                        {{ form.smtp_username }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">SMTP Password</label>
+                        {{ form.smtp_password }}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'setup:setup_modules' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

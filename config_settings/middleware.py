@@ -9,8 +9,10 @@ class ERPSetupMiddleware:
         self.get_response = get_response
     
     def __call__(self, request):
-        # Skip for admin login, setup page, and static files
-        if request.path.startswith('/admin/login/') or \
+        # Skip for login/logout, setup page, and static files
+        if request.path.startswith('/login/') or \
+           request.path.startswith('/logout/') or \
+           request.path.startswith('/admin/login/') or \
            request.path.startswith('/erp-setup/') or \
            request.path.startswith('/static/'):
             return self.get_response(request)

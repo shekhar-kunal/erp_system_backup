@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.urls import reverse
 from products.models import Product
 from exports.mixins import ConfigurableExportMixin
+from exports.column_config import ColumnConfigMixin
 from rbac.admin_mixins import ERPAdminMixin
 
 from .models import (
@@ -118,9 +119,21 @@ class PurchaseOrderHistoryInline(admin.TabularInline):
 
 
 @admin.register(PurchaseOrder)
-class PurchaseOrderAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class PurchaseOrderAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
     inlines = [PurchaseOrderLineInline, PurchaseOrderHistoryInline]
-    
+    ALL_LIST_COLUMNS = [
+        ('po_number', 'PO #'),
+        ('vendor_link', 'Vendor'),
+        ('order_date', 'Order Date'),
+        ('expected_date', 'Expected Date'),
+        ('total_amount_colored', 'Total'),
+        ('status_colored', 'Status'),
+        ('receipt_status_bar', 'Receipt Status'),
+        ('action_buttons', 'Actions'),
+    ]
+    DEFAULT_COLUMNS = ['po_number', 'vendor_link', 'order_date', 'total_amount_colored', 'status_colored', 'receipt_status_bar']
+    REQUIRED_COLUMNS = ['po_number']
+
     list_display = [
         'po_number', 'vendor_link', 'order_date', 'expected_date',
         'total_amount_colored', 'status_colored', 'receipt_status_bar',
@@ -183,7 +196,7 @@ class PurchaseOrderAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmi
         css = {
             'all': ('css/admin/purchasing.css',)
         }
-        js = ('js/admin/purchase_order.js', 'js/dependent_dropdowns.js')
+        js = ('js/admin/purchase_order.js', 'js/dependent_dropdowns.js', 'js/admin/product_autofill.js')
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related(
@@ -898,8 +911,22 @@ class PurchaseReceiptAdmin(ERPAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(Vendor)
-class VendorAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class VendorAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
     form = VendorAdminForm
+    ALL_LIST_COLUMNS = [
+        ('name', 'Name'),
+        ('code', 'Code'),
+        ('email', 'Email'),
+        ('phone', 'Phone'),
+        ('country', 'Country'),
+        ('city', 'City'),
+        ('is_preferred_badge', 'Preferred'),
+        ('performance_badge', 'Performance'),
+        ('total_purchases_display', 'Total Purchases'),
+        ('is_active', 'Active'),
+    ]
+    DEFAULT_COLUMNS = ['name', 'code', 'email', 'phone', 'country', 'is_preferred_badge', 'performance_badge', 'is_active']
+    REQUIRED_COLUMNS = ['name']
     export_fields = [
         'name', 'code', 'contact_person', 'email', 'phone', 'website',
         'country__name', 'city__name', 'tax_number', 'payment_terms', 'currency',

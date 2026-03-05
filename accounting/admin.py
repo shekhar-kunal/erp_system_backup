@@ -14,6 +14,7 @@ from .models import (
     ExchangeRate, AuditLog
 )
 from exports.mixins import ConfigurableExportMixin
+from exports.column_config import ColumnConfigMixin
 from rbac.admin_mixins import ERPAdminMixin
 
 
@@ -41,7 +42,19 @@ class JournalLineInline(admin.TabularInline):
 
 
 @admin.register(Invoice)
-class InvoiceAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class InvoiceAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('invoice_number', 'Invoice #'),
+        ('customer_link', 'Customer'),
+        ('invoice_date', 'Invoice Date'),
+        ('due_date', 'Due Date'),
+        ('net_amount', 'Net Amount'),
+        ('amount_paid', 'Amount Paid'),
+        ('balance_due', 'Balance Due'),
+        ('status_colored', 'Status'),
+    ]
+    DEFAULT_COLUMNS = ['invoice_number', 'customer_link', 'invoice_date', 'due_date', 'net_amount', 'balance_due', 'status_colored']
+    REQUIRED_COLUMNS = ['invoice_number']
     list_display = [
         'invoice_number', 'customer_link', 'invoice_date', 'due_date',
         'net_amount', 'amount_paid', 'balance_due', 'status_colored'
@@ -96,7 +109,19 @@ class InvoiceAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
 
 
 @admin.register(Bill)
-class BillAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class BillAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('bill_number', 'Bill #'),
+        ('vendor_link', 'Vendor'),
+        ('bill_date', 'Bill Date'),
+        ('due_date', 'Due Date'),
+        ('net_amount', 'Net Amount'),
+        ('amount_paid', 'Amount Paid'),
+        ('balance_due', 'Balance Due'),
+        ('status_colored', 'Status'),
+    ]
+    DEFAULT_COLUMNS = ['bill_number', 'vendor_link', 'bill_date', 'due_date', 'net_amount', 'balance_due', 'status_colored']
+    REQUIRED_COLUMNS = ['bill_number']
     list_display = [
         'bill_number', 'vendor_link', 'bill_date', 'due_date',
         'net_amount', 'amount_paid', 'balance_due', 'status_colored'
@@ -150,7 +175,18 @@ class BillAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
 
 
 @admin.register(Payment)
-class PaymentAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class PaymentAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('payment_number', 'Payment #'),
+        ('payment_type', 'Type'),
+        ('related_document', 'Document'),
+        ('amount', 'Amount'),
+        ('payment_method', 'Method'),
+        ('payment_date', 'Date'),
+        ('status_colored', 'Status'),
+    ]
+    DEFAULT_COLUMNS = ['payment_number', 'payment_type', 'related_document', 'amount', 'payment_date', 'status_colored']
+    REQUIRED_COLUMNS = ['payment_number']
     list_display = [
         'payment_number', 'payment_type', 'related_document', 'amount',
         'payment_method', 'payment_date', 'status_colored'
@@ -205,9 +241,20 @@ class PaymentAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
 
 
 @admin.register(JournalEntry)
-class JournalEntryAdmin(ERPAdminMixin, ConfigurableExportMixin, admin.ModelAdmin):
+class JournalEntryAdmin(ERPAdminMixin, ColumnConfigMixin, ConfigurableExportMixin, admin.ModelAdmin):
+    ALL_LIST_COLUMNS = [
+        ('entry_number', 'Entry #'),
+        ('entry_date', 'Date'),
+        ('journal_type', 'Type'),
+        ('description_short', 'Description'),
+        ('total_debits', 'Debits'),
+        ('approval_status', 'Approval'),
+        ('is_posted', 'Posted'),
+    ]
+    DEFAULT_COLUMNS = ['entry_number', 'entry_date', 'journal_type', 'description_short', 'total_debits', 'approval_status', 'is_posted']
+    REQUIRED_COLUMNS = ['entry_number']
     list_display = [
-        'entry_number', 'entry_date', 'journal_type', 
+        'entry_number', 'entry_date', 'journal_type',
         'description_short', 'total_debits', 'approval_status', 'is_posted'
     ]
     list_filter = ['journal_type', 'approval_status', 'is_posted', 'entry_date']

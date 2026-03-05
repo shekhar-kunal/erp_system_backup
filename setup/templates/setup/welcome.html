@@ -1,0 +1,106 @@
+{% extends "setup/base_setup.html" %}
+{% load static %}
+
+{% block content %}
+<div class="setup-card">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4><i class="fas fa-globe"></i> Welcome &amp; Basic Settings</h4>
+            <p class="mb-0 small">Select your country and we'll fill in the recommended defaults</p>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Language</label>
+                        {{ form.language }}
+                        {% if form.language.errors %}<div class="text-danger small">{{ form.language.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">
+                            Country
+                            <span class="badge bg-info text-dark ms-1" style="font-size:10px">auto-fills below</span>
+                        </label>
+                        {{ form.country }}
+                        {% if form.country.errors %}<div class="text-danger small">{{ form.country.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Timezone</label>
+                        {{ form.timezone }}
+                        {% if form.timezone.errors %}<div class="text-danger small">{{ form.timezone.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Currency</label>
+                        {{ form.currency }}
+                        {% if form.currency.errors %}<div class="text-danger small">{{ form.currency.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Date Format</label>
+                        {{ form.date_format }}
+                        {% if form.date_format.errors %}<div class="text-danger small">{{ form.date_format.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Country → recommended defaults mapping
+const COUNTRY_DEFAULTS = {
+    'US': { lang: 'en', tz: 'America/New_York', cur: 'USD', fmt: 'm/d/Y' },
+    'GB': { lang: 'en', tz: 'Europe/London',    cur: 'GBP', fmt: 'd/m/Y' },
+    'DE': { lang: 'de', tz: 'Europe/Berlin',    cur: 'EUR', fmt: 'd.m.Y' },
+    'UA': { lang: 'uk', tz: 'Europe/Kyiv',      cur: 'UAH', fmt: 'd.m.Y' },
+    'IN': { lang: 'en', tz: 'Asia/Kolkata',     cur: 'INR', fmt: 'd/m/Y' },
+    'CN': { lang: 'en', tz: 'Asia/Shanghai',    cur: 'CNY', fmt: 'Y-m-d' },
+};
+
+function selectByValue(selectId, value) {
+    const el = document.getElementById(selectId);
+    if (!el) return;
+    for (const opt of el.options) {
+        if (opt.value === value) { el.value = value; return; }
+    }
+}
+
+function selectCurrencyByCode(code) {
+    const el = document.getElementById('id_currency');
+    if (!el) return;
+    // Match option whose text contains the currency code (e.g. "USD", "EUR")
+    for (const opt of el.options) {
+        if (opt.text.includes(code)) { el.value = opt.value; return; }
+    }
+}
+
+document.getElementById('id_country').addEventListener('change', function () {
+    const defaults = COUNTRY_DEFAULTS[this.value];
+    if (!defaults) return;
+
+    selectByValue('id_language',    defaults.lang);
+    selectByValue('id_timezone',    defaults.tz);
+    selectByValue('id_date_format', defaults.fmt);
+    selectCurrencyByCode(defaults.cur);
+
+    // Flash hint
+    this.style.borderColor = '#0d6efd';
+    setTimeout(() => { this.style.borderColor = ''; }, 800);
+});
+</script>
+{% endblock %}

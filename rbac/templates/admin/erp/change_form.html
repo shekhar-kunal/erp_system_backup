@@ -1,0 +1,17 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {% if erp_edit_url %}
+  <li>
+    <a href="{{ erp_edit_url }}" class="viewsitelink" style="background:#417690;">
+      &#9998; Edit
+    </a>
+  </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
+
+{# Hide save buttons entirely in view-only mode #}
+{% block submit_buttons_top %}{% if not erp_view_only %}{{ block.super }}{% endif %}{% endblock %}
+{% block submit_buttons_bottom %}{% if not erp_view_only %}{{ block.super }}{% endif %}{% endblock %}
